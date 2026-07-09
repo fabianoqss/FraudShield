@@ -75,24 +75,26 @@ Full event contracts, DB schemas, and package structure are documented in [`CLAU
 - Docker + Docker Compose
 - Python 3.11 (for `ml-model-service`, Phase 2)
 
-### 1. Start local infrastructure (Kafka, PostgreSQL, Redis)
-```bash
-cd infrastructure
-docker-compose up -d
-docker-compose ps   # all containers should show "Up"
-```
-
-### 2. Configure environment variables
+### 1. Configure environment variables
 ```bash
 cp .env.example .env
-# fill in JWT_SECRET and database credentials
+# fill in database credentials
+```
+
+### 2. Start local infrastructure (PostgreSQL, Kafka, Redis)
+`.env` lives at the repo root but Docker Compose runs from `infrastructure/`, so point it at the env file explicitly with `--env-file`:
+```bash
+cd infrastructure
+docker-compose --env-file ../.env up -d
+docker-compose ps   # all containers should show "Up (healthy)"
 ```
 
 ### 3. Run a service
 ```bash
-cd services/auth-service
+cd auth-service
 ./mvnw spring-boot:run
 ```
+The service reads the same variables from `.env` — in IntelliJ, set them under Run Configuration → Environment variables (or use the EnvFile plugin to load `.env` directly).
 
 Each service is a standalone Spring Boot (or FastAPI) app and can be run independently once its dependencies (its database, Kafka) are up.
 
