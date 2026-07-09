@@ -1,0 +1,46 @@
+# AI assistant instructions (local context only, not shared via the repo)
+CLAUDE.md
+
+# Environment variables
+.env
+*.env.local
+
+# Java / Maven
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+*.log
+.mvn/timing.properties
+
+# Python (ml-model-service, ml/training)
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.idea/
+*.iml
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker
+docker-compose.override.yml
+
+# Kubernetes local overrides
+*.local.yaml
+
+# Logs
+logs/
+*.log
