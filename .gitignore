@@ -1,5 +1,9 @@
 # AI assistant instructions (local context only, not shared via the repo)
 CLAUDE.md
+NEXT_STEPS.md
+
+# API client collections (local testing only, not shared via the repo)
+bruno/
 
 # Environment variables
 .env

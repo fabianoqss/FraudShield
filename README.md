@@ -118,7 +118,7 @@ fraudshield-backend/
 **Phase 1 — In progress**
 - [x] Project structure defined
 - [x] Infrastructure `docker-compose` defined
-- [ ] `auth-service`
+- [ ] `auth-service` — register + login implemented, blocked on a live 403 (see `CLAUDE.md`), not yet confirmed end-to-end
 - [ ] `account-service`
 - [ ] `transaction-service`
 - [ ] `fraud-detection-service` (basic)

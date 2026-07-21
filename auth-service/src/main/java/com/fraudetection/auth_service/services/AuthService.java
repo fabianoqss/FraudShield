@@ -8,13 +8,16 @@ import com.fraudetection.auth_service.dto.UserResponse;
 import com.fraudetection.auth_service.entities.User;
 import com.fraudetection.auth_service.repositories.UserRepository;
 import com.fraudetection.auth_service.security.JwtService;
+import com.fraudetection.auth_service.services.exceptions.DuplicateCpfException;
 import com.fraudetection.auth_service.services.exceptions.EmailAlreadyExistsException;
 import com.fraudetection.auth_service.services.exceptions.InvalidCredentialsException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -23,14 +26,18 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
 
     public UserResponse register(RegisterRequest registerRequest) {
         if (userRepository.existsByEmail(registerRequest.email())) {
             throw new EmailAlreadyExistsException(registerRequest.email());
         }
 
+        if (userRepository.existsByCpf(registerRequest.cpf())) {
+            throw new DuplicateCpfException(registerRequest.cpf());
+        }
+
         User user = new User();
-        user.setId(UUID.randomUUID());
         user.setFullName(registerRequest.fullName());
         user.setEmail(registerRequest.email());
         user.setCpf(registerRequest.cpf());
@@ -42,10 +49,14 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest loginRequest) {
-        User user = userRepository.findByEmail(loginRequest.email())
-                .orElseThrow(InvalidCredentialsException::new);
+        User user;
 
-        if (!passwordEncoder.matches(loginRequest.password(), user.getPasswordHash())) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password())
+            );
+            user = (User) authentication.getPrincipal();
+        } catch (AuthenticationException e) {
             throw new InvalidCredentialsException();
         }
 
@@ -53,5 +64,4 @@ public class AuthService {
 
         return new AuthResponse(accessToken, "Bearer", jwtService.getExpirationSeconds());
     }
-
 }
