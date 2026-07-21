@@ -118,8 +118,8 @@ fraudshield-backend/
 **Phase 1 — In progress**
 - [x] Project structure defined
 - [x] Infrastructure `docker-compose` defined
-- [ ] `auth-service` — register + login implemented, blocked on a live 403 (see `CLAUDE.md`), not yet confirmed end-to-end
-- [ ] `account-service`
+- [ ] `auth-service` — register + login confirmed end-to-end; centralized error handling and duplicate CPF check added; refresh tokens and tests still pending
+- [ ] `account-service` — accounts, balance locks, and the 3 Kafka consumers (created/approved/denied) confirmed end-to-end against a live local stack; automated tests still pending
 - [ ] `transaction-service`
 - [ ] `fraud-detection-service` (basic)
 - [ ] Kafka integration between `transaction-service` and `fraud-detection-service`
@@ -128,7 +128,7 @@ fraudshield-backend/
 - [ ] `ml-model-service` (Python + scikit-learn)
 - [ ] `ledger-service`
 - [ ] `notification-service`
-- [ ] `api-gateway`
+- [ ] `api-gateway` — routes `/auth/**` to auth-service and validates JWTs locally elsewhere; not yet run against the other services
 
 **Phase 3 — Not started**
 - [ ] Kubernetes manifests

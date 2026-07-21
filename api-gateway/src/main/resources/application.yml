@@ -6,6 +6,10 @@ spring:
               uri: ${AUTH_SERVICE_URL:http://localhost:8081}
               predicates:
                 - Path=/auth/**
+            - id: account-service
+              uri: ${ACCOUNT_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/accounts/**
 
 jwt:
   secret: ${JWT_SECRET}
