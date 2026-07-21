@@ -1,5 +1,6 @@
-package com.fraudetection.api_gateway.security;
+package com.fraudetection.api_gateway.security.filter;
 
+import com.fraudetection.api_gateway.security.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -14,7 +15,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -22,6 +25,8 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
+    static final String USER_ID_HEADER = "X-User-Id";
+    static final String USER_EMAIL_HEADER = "X-User-Email";
 
     private final JwtService jwtService;
 
@@ -34,19 +39,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
 
         if (header == null || !header.startsWith(BEARER_PREFIX)) {
-            filterChain.doFilter(request, response);
+            filterChain.doFilter(new UserContextRequestWrapper(request, Map.of()), response);
             return;
         }
 
         String token = header.substring(BEARER_PREFIX.length());
+        Claims claims;
 
         try {
-            Claims claims = jwtService.parseClaims(token);
-
-            var authentication = new UsernamePasswordAuthenticationToken(
-                    claims.getSubject(), null, List.of()
-            );
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            claims = jwtService.parseClaims(token);
         } catch (JwtException | IllegalArgumentException e) {
             log.warn("Rejected invalid JWT: {}", e.getMessage());
             SecurityContextHolder.clearContext();
@@ -56,6 +57,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        filterChain.doFilter(request, response);
+        var authentication = new UsernamePasswordAuthenticationToken(
+                claims.getSubject(), null, List.of()
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        Map<String, String> identityHeaders = new LinkedHashMap<>();
+        identityHeaders.put(USER_ID_HEADER, claims.getSubject());
+        String email = claims.get("email", String.class);
+        if (email != null) {
+            identityHeaders.put(USER_EMAIL_HEADER, email);
+        }
+
+        filterChain.doFilter(new UserContextRequestWrapper(request, identityHeaders), response);
     }
 }
