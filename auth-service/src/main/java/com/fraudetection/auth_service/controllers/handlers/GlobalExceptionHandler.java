@@ -1,4 +1,4 @@
-package com.fraudetection.auth_service.controllers;
+package com.fraudetection.auth_service.controllers.handlers;
 
 import com.fraudetection.auth_service.dto.ErrorResponse;
 import com.fraudetection.auth_service.services.exceptions.DuplicateCpfException;

@@ -1,4 +1,4 @@
-package com.fraudetection.auth_service.security;
+package com.fraudetection.auth_service.services;
 
 import com.fraudetection.auth_service.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
