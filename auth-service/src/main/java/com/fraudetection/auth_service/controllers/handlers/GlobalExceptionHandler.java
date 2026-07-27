@@ -4,6 +4,7 @@ import com.fraudetection.auth_service.dto.ErrorResponse;
 import com.fraudetection.auth_service.services.exceptions.DuplicateCpfException;
 import com.fraudetection.auth_service.services.exceptions.EmailAlreadyExistsException;
 import com.fraudetection.auth_service.services.exceptions.InvalidCredentialsException;
+import com.fraudetection.auth_service.services.exceptions.InvalidRefreshTokenException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -37,6 +38,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex, HttpServletRequest request) {
         log.warn("Login rejected for request to {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRefreshToken(InvalidRefreshTokenException ex, HttpServletRequest request) {
+        log.warn("Refresh token rejected for request to {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 

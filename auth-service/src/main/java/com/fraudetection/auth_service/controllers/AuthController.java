@@ -3,6 +3,7 @@ package com.fraudetection.auth_service.controllers;
 
 import com.fraudetection.auth_service.dto.AuthResponse;
 import com.fraudetection.auth_service.dto.LoginRequest;
+import com.fraudetection.auth_service.dto.RefreshTokenRequest;
 import com.fraudetection.auth_service.dto.RegisterRequest;
 import com.fraudetection.auth_service.dto.UserResponse;
 import com.fraudetection.auth_service.services.AuthService;
@@ -32,6 +33,18 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         AuthResponse response = authService.login(loginRequest);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(value = "/refresh")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        AuthResponse response = authService.refresh(request.refreshToken());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(value = "/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        authService.logout(request.refreshToken());
+        return ResponseEntity.noContent().build();
     }
 
 }

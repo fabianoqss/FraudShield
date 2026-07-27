@@ -1,9 +1,6 @@
 package com.fraudetection.auth_service.services;
 
-import com.fraudetection.auth_service.dto.AuthResponse;
-import com.fraudetection.auth_service.dto.LoginRequest;
-import com.fraudetection.auth_service.dto.RegisterRequest;
-import com.fraudetection.auth_service.dto.UserResponse;
+import com.fraudetection.auth_service.dto.*;
 
 import com.fraudetection.auth_service.entities.User;
 import com.fraudetection.auth_service.repositories.UserRepository;
@@ -11,6 +8,7 @@ import com.fraudetection.auth_service.security.JwtService;
 import com.fraudetection.auth_service.services.exceptions.DuplicateCpfException;
 import com.fraudetection.auth_service.services.exceptions.EmailAlreadyExistsException;
 import com.fraudetection.auth_service.services.exceptions.InvalidCredentialsException;
+import com.fraudetection.auth_service.services.exceptions.InvalidRefreshTokenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +25,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final RefreshTokenService refreshTokenService;
 
     public UserResponse register(RegisterRequest registerRequest) {
         if (userRepository.existsByEmail(registerRequest.email())) {
@@ -62,7 +61,24 @@ public class AuthService {
         }
 
         String accessToken = jwtService.generateToken(user);
+        String refreshToken = refreshTokenService.issue(user.getId());
 
-        return new AuthResponse(accessToken, "Bearer", jwtService.getExpirationSeconds());
+        return new AuthResponse(accessToken, refreshToken, "Bearer", jwtService.getExpirationSeconds());
     }
+
+    public AuthResponse refresh(String refreshToken) {
+        RefreshTokenService.RefreshResult result = refreshTokenService.rotate(refreshToken);
+
+        User user = userRepository.findById(result.userId())
+                .orElseThrow(InvalidRefreshTokenException::new);
+
+        String accessToken = jwtService.generateToken(user);
+
+        return new AuthResponse(accessToken, result.rawToken(), "Bearer", jwtService.getExpirationSeconds());
+    }
+
+    public void logout(String refreshToken) {
+        refreshTokenService.revoke(refreshToken);
+    }
+
 }

@@ -19,7 +19,10 @@ server:
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  expiration-ms: ${JWT_EXPIRATION_MS:900000}
+
+refresh-token:
+  expiration-ms: ${REFRESH_TOKEN_EXPIRATION_MS:604800000}
 
 management:
   endpoints:
