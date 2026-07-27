@@ -7,6 +7,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -37,6 +38,9 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     private String passwordHash;
+
+    @Column(nullable = false)
+    private LocalDate birthDate;
 
     @CreationTimestamp
     @Column(updatable = false, nullable = false)

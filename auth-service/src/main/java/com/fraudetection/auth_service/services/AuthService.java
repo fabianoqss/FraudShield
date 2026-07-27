@@ -42,10 +42,11 @@ public class AuthService {
         user.setEmail(registerRequest.email());
         user.setCpf(registerRequest.cpf());
         user.setPasswordHash(passwordEncoder.encode(registerRequest.password()));
+        user.setBirthDate(registerRequest.birthDate());
 
         User saved = userRepository.save(user);
 
-        return new UserResponse(saved.getId(), saved.getEmail(), saved.getFullName(), saved.getCreatedAt());
+        return new UserResponse(saved.getId(), saved.getEmail(), saved.getFullName(), saved.getBirthDate(), saved.getCreatedAt());
     }
 
     public AuthResponse login(LoginRequest loginRequest) {
