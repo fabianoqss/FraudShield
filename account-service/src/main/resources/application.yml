@@ -26,6 +26,10 @@ spring:
         spring.json.trusted.packages: com.fraudetection.account_service.dto.event
         spring.json.use.type.headers: false
         spring.json.value.default.type: com.fraudetection.account_service.dto.event.KafkaEventEnvelope
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
   data:
     redis:
       host: ${REDIS_HOST}
@@ -33,3 +37,25 @@ spring:
 
 server:
   port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  tracing:
+    sampling:
+      probability: 1.0
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
