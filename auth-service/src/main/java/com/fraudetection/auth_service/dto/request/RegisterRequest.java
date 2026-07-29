@@ -1,4 +1,4 @@
-package com.fraudetection.auth_service.dto;
+package com.fraudetection.auth_service.dto.request;
 
 import com.fraudetection.auth_service.validation.CPF;
 import com.fraudetection.auth_service.validation.MinAge;

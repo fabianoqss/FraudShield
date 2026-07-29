@@ -1,20 +1,25 @@
 package com.fraudetection.auth_service.controllers;
 
 
-import com.fraudetection.auth_service.dto.AuthResponse;
-import com.fraudetection.auth_service.dto.LoginRequest;
-import com.fraudetection.auth_service.dto.RefreshTokenRequest;
-import com.fraudetection.auth_service.dto.RegisterRequest;
-import com.fraudetection.auth_service.dto.UserResponse;
+import com.fraudetection.auth_service.dto.response.AuthResponse;
+import com.fraudetection.auth_service.dto.request.ChangePasswordRequest;
+import com.fraudetection.auth_service.dto.request.LoginRequest;
+import com.fraudetection.auth_service.dto.request.RefreshTokenRequest;
+import com.fraudetection.auth_service.dto.request.RegisterRequest;
+import com.fraudetection.auth_service.dto.response.UserResponse;
 import com.fraudetection.auth_service.services.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/auth")
@@ -44,6 +49,13 @@ public class AuthController {
     @PostMapping(value = "/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
         authService.logout(request.refreshToken());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping(value = "/password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request, Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        authService.changePassword(userId, request);
         return ResponseEntity.noContent().build();
     }
 

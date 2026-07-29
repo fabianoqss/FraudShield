@@ -1,14 +1,19 @@
 package com.fraudetection.auth_service.services;
 
-import com.fraudetection.auth_service.dto.*;
-
+import com.fraudetection.auth_service.dto.request.ChangePasswordRequest;
+import com.fraudetection.auth_service.dto.request.LoginRequest;
+import com.fraudetection.auth_service.dto.request.RegisterRequest;
+import com.fraudetection.auth_service.dto.response.AuthResponse;
+import com.fraudetection.auth_service.dto.response.UserResponse;
 import com.fraudetection.auth_service.entities.User;
 import com.fraudetection.auth_service.repositories.UserRepository;
 import com.fraudetection.auth_service.security.JwtService;
 import com.fraudetection.auth_service.services.exceptions.DuplicateCpfException;
 import com.fraudetection.auth_service.services.exceptions.EmailAlreadyExistsException;
 import com.fraudetection.auth_service.services.exceptions.InvalidCredentialsException;
+import com.fraudetection.auth_service.services.exceptions.InvalidCurrentPasswordException;
 import com.fraudetection.auth_service.services.exceptions.InvalidRefreshTokenException;
+import com.fraudetection.auth_service.services.exceptions.PasswordMismatchException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,6 +21,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -80,5 +88,25 @@ public class AuthService {
     public void logout(String refreshToken) {
         refreshTokenService.revoke(refreshToken);
     }
+
+    @Transactional
+    public void changePassword(UUID userId, ChangePasswordRequest request) {
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            throw new PasswordMismatchException();
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(InvalidCredentialsException::new);
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new InvalidCurrentPasswordException();
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        refreshTokenService.revokeAllForUser(userId);
+    }
+
 
 }

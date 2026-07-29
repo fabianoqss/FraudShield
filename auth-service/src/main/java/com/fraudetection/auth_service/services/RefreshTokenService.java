@@ -81,6 +81,11 @@ public class RefreshTokenService {
                 .ifPresent(existing -> refreshTokenRepository.revokeById(existing.getId(), LocalDateTime.now()));
     }
 
+    @Transactional
+    public void revokeAllForUser(UUID userId) {
+        refreshTokenRepository.revokeAllActiveForUser(userId, LocalDateTime.now());
+    }
+
     private String generateRawToken() {
         byte[] randomBytes = new byte[TOKEN_BYTE_LENGTH];
         SECURE_RANDOM.nextBytes(randomBytes);

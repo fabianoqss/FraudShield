@@ -1,10 +1,12 @@
 package com.fraudetection.auth_service.controllers.handlers;
 
-import com.fraudetection.auth_service.dto.ErrorResponse;
+import com.fraudetection.auth_service.dto.response.ErrorResponse;
 import com.fraudetection.auth_service.services.exceptions.DuplicateCpfException;
 import com.fraudetection.auth_service.services.exceptions.EmailAlreadyExistsException;
 import com.fraudetection.auth_service.services.exceptions.InvalidCredentialsException;
+import com.fraudetection.auth_service.services.exceptions.InvalidCurrentPasswordException;
 import com.fraudetection.auth_service.services.exceptions.InvalidRefreshTokenException;
+import com.fraudetection.auth_service.services.exceptions.PasswordMismatchException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -45,6 +47,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidRefreshToken(InvalidRefreshTokenException ex, HttpServletRequest request) {
         log.warn("Refresh token rejected for request to {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidCurrentPasswordException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCurrentPassword(InvalidCurrentPasswordException ex, HttpServletRequest request) {
+        log.warn("Password change rejected for request to {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(PasswordMismatchException.class)
+    public ResponseEntity<ErrorResponse> handlePasswordMismatch(PasswordMismatchException ex, HttpServletRequest request) {
+        log.warn("Password change rejected for request to {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
