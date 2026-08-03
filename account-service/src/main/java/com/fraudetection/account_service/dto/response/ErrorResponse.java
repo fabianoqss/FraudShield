@@ -1,4 +1,4 @@
-package com.fraudetection.account_service.dto;
+package com.fraudetection.account_service.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

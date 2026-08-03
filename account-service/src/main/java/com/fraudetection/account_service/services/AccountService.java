@@ -1,8 +1,8 @@
 package com.fraudetection.account_service.services;
 
-import com.fraudetection.account_service.dto.AccountResponse;
-import com.fraudetection.account_service.dto.BalanceResponse;
-import com.fraudetection.account_service.dto.CreateAccountRequest;
+import com.fraudetection.account_service.dto.response.AccountResponse;
+import com.fraudetection.account_service.dto.response.BalanceResponse;
+import com.fraudetection.account_service.dto.request.CreateAccountRequest;
 import com.fraudetection.account_service.entities.Account;
 import com.fraudetection.account_service.repositories.AccountRepository;
 import com.fraudetection.account_service.services.exceptions.AccountAccessDeniedException;
@@ -10,6 +10,7 @@ import com.fraudetection.account_service.services.exceptions.AccountNotFoundExce
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.RoundingMode;
 import java.util.UUID;
 
 @Service
@@ -42,9 +43,9 @@ public class AccountService {
 
         return new BalanceResponse(
                 account.getId(),
-                account.getBalance(),
-                account.getLockedBalance(),
-                account.getBalance().subtract(account.getLockedBalance())
+                account.getBalance().setScale(2, RoundingMode.HALF_UP),
+                account.getLockedBalance().setScale(2, RoundingMode.HALF_UP),
+                account.getBalance().subtract(account.getLockedBalance()).setScale(2, RoundingMode.HALF_UP)
         );
     }
 
@@ -53,8 +54,8 @@ public class AccountService {
                 account.getId(),
                 account.getOwnerId(),
                 account.getOwnerName(),
-                account.getBalance(),
-                account.getLockedBalance(),
+                account.getBalance().setScale(2, RoundingMode.HALF_UP),
+                account.getLockedBalance().setScale(2, RoundingMode.HALF_UP),
                 account.getStatus(),
                 account.getCreatedAt()
         );

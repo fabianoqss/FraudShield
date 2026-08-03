@@ -1,7 +1,7 @@
 package com.fraudetection.account_service.security;
 
 import tools.jackson.databind.ObjectMapper;
-import com.fraudetection.account_service.dto.ErrorResponse;
+import com.fraudetection.account_service.dto.response.ErrorResponse;
 import com.fraudetection.account_service.security.filter.UserHeaderAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

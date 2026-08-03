@@ -1,8 +1,8 @@
 package com.fraudetection.account_service.controllers;
 
-import com.fraudetection.account_service.dto.AccountResponse;
-import com.fraudetection.account_service.dto.BalanceResponse;
-import com.fraudetection.account_service.dto.CreateAccountRequest;
+import com.fraudetection.account_service.dto.response.AccountResponse;
+import com.fraudetection.account_service.dto.response.BalanceResponse;
+import com.fraudetection.account_service.dto.request.CreateAccountRequest;
 import com.fraudetection.account_service.services.AccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,6 @@
 package com.fraudetection.account_service.controllers.handlers;
 
-import com.fraudetection.account_service.dto.ErrorResponse;
+import com.fraudetection.account_service.dto.response.ErrorResponse;
 import com.fraudetection.account_service.services.exceptions.AccountAccessDeniedException;
 import com.fraudetection.account_service.services.exceptions.AccountNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
