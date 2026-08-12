@@ -18,4 +18,11 @@ public class TransactionService {
 
         return null;
     }
+
+    public TransactionResponse getRequest(){
+
+
+
+        return null;
+    }
 }

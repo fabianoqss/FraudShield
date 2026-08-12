@@ -1,5 +1,7 @@
 package com.fraudetection.transaction_service.entities;
 
+import com.fraudetection.transaction_service.enums.PaymentStatus;
+import com.fraudetection.transaction_service.enums.PaymentType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,13 +29,16 @@ public class Transaction {
 
     private BigDecimal amount;
 
-    private String type;
+    private PaymentType type;
 
-    private String status;
+    private PaymentStatus status;
 
     private String idempotencyKey;
 
     private LocalDateTime createdAt;
 
+    private String deviceId;
+
+    private String ipAddress;
 
 }
