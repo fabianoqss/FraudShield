@@ -35,6 +35,104 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-transaction:
+    image: postgres:16-alpine
+    container_name: fraudshield-postgres-transaction
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: transaction_db
+      POSTGRES_USER: ${POSTGRES_TRANSACTION_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_TRANSACTION_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_transaction_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_TRANSACTION_USER} -d transaction_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build:
+      context: ../auth-service
+    container_name: fraudshield-auth-service
+    restart: unless-stopped
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+    environment:
+      POSTGRES_AUTH_URL: jdbc:postgresql://postgres-auth:5432/auth_db
+      POSTGRES_AUTH_USER: ${POSTGRES_AUTH_USER}
+      POSTGRES_AUTH_PASSWORD: ${POSTGRES_AUTH_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-900000}
+      REFRESH_TOKEN_EXPIRATION_MS: ${REFRESH_TOKEN_EXPIRATION_MS:-604800000}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+    ports:
+      - "8081:8081"
+    profiles: ["services"]
+
+  account-service:
+    build:
+      context: ../account-service
+    container_name: fraudshield-account-service
+    restart: unless-stopped
+    depends_on:
+      postgres-account:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      POSTGRES_ACCOUNT_URL: jdbc:postgresql://postgres-account:5432/account_db
+      POSTGRES_ACCOUNT_USER: ${POSTGRES_ACCOUNT_USER}
+      POSTGRES_ACCOUNT_PASSWORD: ${POSTGRES_ACCOUNT_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+    ports:
+      - "8082:8082"
+    profiles: ["services"]
+
+  transaction-service:
+    build:
+      context: ../transaction-service
+    container_name: fraudshield-transaction-service
+    restart: unless-stopped
+    depends_on:
+      postgres-transaction:
+        condition: service_healthy
+    environment:
+      POSTGRES_TRANSACTION_URL: jdbc:postgresql://postgres-transaction:5432/transaction_db
+      POSTGRES_TRANSACTION_USER: ${POSTGRES_TRANSACTION_USER}
+      POSTGRES_TRANSACTION_PASSWORD: ${POSTGRES_TRANSACTION_PASSWORD}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+    ports:
+      - "8083:8083"
+    profiles: ["services"]
+
+  api-gateway:
+    build:
+      context: ../api-gateway
+    container_name: fraudshield-api-gateway
+    restart: unless-stopped
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      account-service:
+        condition: service_healthy
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      ACCOUNT_SERVICE_URL: http://account-service:8082
+      JWT_SECRET: ${JWT_SECRET}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+    ports:
+      - "8080:8080"
+    profiles: ["services"]
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.1
     container_name: fraudshield-zookeeper
@@ -126,6 +224,7 @@ services:
 volumes:
   postgres_auth_data:
   postgres_account_data:
+  postgres_transaction_data:
   prometheus_data:
   tempo_data:
   grafana_data:
