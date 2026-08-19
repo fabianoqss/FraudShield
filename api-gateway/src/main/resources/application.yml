@@ -14,6 +14,10 @@ spring:
               uri: ${ACCOUNT_SERVICE_URL:http://localhost:8082}
               predicates:
                 - Path=/accounts/**
+            - id: transaction-service
+              uri: ${TRANSACTION_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=/transactions/**
 
 jwt:
   secret: ${JWT_SECRET}

@@ -127,9 +127,12 @@ services:
         condition: service_healthy
       account-service:
         condition: service_healthy
+      transaction-service:
+        condition: service_healthy
     environment:
       AUTH_SERVICE_URL: http://auth-service:8081
       ACCOUNT_SERVICE_URL: http://account-service:8082
+      TRANSACTION_SERVICE_URL: http://transaction-service:8083
       JWT_SECRET: ${JWT_SECRET}
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
