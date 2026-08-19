@@ -24,6 +24,10 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+.ipynb_checkpoints/
+
+# ML datasets (too large for git)
+ml-model-service/data/paysim.csv
 
 # IDE
 .idea/
