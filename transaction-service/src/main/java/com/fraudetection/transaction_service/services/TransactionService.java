@@ -1,5 +1,6 @@
 package com.fraudetection.transaction_service.services;
 
+import com.fraudetection.transaction_service.clients.AccountServiceClient;
 import com.fraudetection.transaction_service.dto.request.TransactionRequest;
 import com.fraudetection.transaction_service.dto.response.TransactionResponse;
 import com.fraudetection.transaction_service.entities.Transaction;
@@ -21,12 +22,15 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final TransactionCreatedProducer transactionCreatedProducer;
+    private final AccountServiceClient accountServiceClient;
 
     @Transactional
-    public TransactionResponse createTransaction(TransactionRequest request) {
+    public TransactionResponse createTransaction(TransactionRequest request, UUID requestingUserId) {
         if (transactionRepository.existsByIdempotencyKey(request.idempotencyKey())) {
             throw new DuplicateIdempotencyKeyException(request.idempotencyKey());
         }
+
+        accountServiceClient.verifySourceAccountOwnership(request.sourceAccountId(), requestingUserId);
 
         Transaction transaction = new Transaction();
         transaction.setSourceAccountId(request.sourceAccountId());

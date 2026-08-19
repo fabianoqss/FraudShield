@@ -1,7 +1,10 @@
 package com.fraudetection.transaction_service.controllers.handlers;
 
 import com.fraudetection.transaction_service.dto.response.ErrorResponse;
+import com.fraudetection.transaction_service.services.exceptions.AccountServiceUnavailableException;
 import com.fraudetection.transaction_service.services.exceptions.DuplicateIdempotencyKeyException;
+import com.fraudetection.transaction_service.services.exceptions.SourceAccountAccessDeniedException;
+import com.fraudetection.transaction_service.services.exceptions.SourceAccountNotFoundException;
 import com.fraudetection.transaction_service.services.exceptions.TransactionNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +34,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleTransactionNotFound(TransactionNotFoundException ex, HttpServletRequest request) {
         log.warn("Transaction lookup failed: {}", ex.getMessage());
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(SourceAccountNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSourceAccountNotFound(SourceAccountNotFoundException ex, HttpServletRequest request) {
+        log.warn("Transaction creation rejected: {}", ex.getMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(SourceAccountAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleSourceAccountAccessDenied(SourceAccountAccessDeniedException ex, HttpServletRequest request) {
+        log.warn("Transaction creation rejected: {}", ex.getMessage());
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AccountServiceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleAccountServiceUnavailable(AccountServiceUnavailableException ex, HttpServletRequest request) {
+        log.error("Transaction creation failed: {}", ex.getMessage());
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
