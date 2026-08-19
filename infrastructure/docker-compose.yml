@@ -105,10 +105,13 @@ services:
     depends_on:
       postgres-transaction:
         condition: service_healthy
+      kafka:
+        condition: service_started
     environment:
       POSTGRES_TRANSACTION_URL: jdbc:postgresql://postgres-transaction:5432/transaction_db
       POSTGRES_TRANSACTION_USER: ${POSTGRES_TRANSACTION_USER}
       POSTGRES_TRANSACTION_PASSWORD: ${POSTGRES_TRANSACTION_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8083:8083"

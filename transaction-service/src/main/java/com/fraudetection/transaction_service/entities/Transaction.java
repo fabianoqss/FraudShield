@@ -33,6 +33,7 @@ public class Transaction {
 
     private PaymentStatus status;
 
+    @Column(nullable = false, unique = true)
     private String idempotencyKey;
 
     private LocalDateTime createdAt;
