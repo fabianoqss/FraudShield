@@ -6,6 +6,7 @@ import com.fraudetection.auth_service.dto.request.ChangePasswordRequest;
 import com.fraudetection.auth_service.dto.request.LoginRequest;
 import com.fraudetection.auth_service.dto.request.RefreshTokenRequest;
 import com.fraudetection.auth_service.dto.request.RegisterRequest;
+import com.fraudetection.auth_service.dto.response.UserLookupResponse;
 import com.fraudetection.auth_service.dto.response.UserResponse;
 import com.fraudetection.auth_service.services.AuthService;
 import jakarta.validation.Valid;
@@ -13,10 +14,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -57,6 +60,12 @@ public class AuthController {
         UUID userId = UUID.fromString(authentication.getName());
         authService.changePassword(userId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping(value = "/users/lookup")
+    public ResponseEntity<UserLookupResponse> lookup(@RequestParam(required = false) String email,
+                                                        @RequestParam(required = false) String cpf) {
+        return ResponseEntity.ok(authService.lookup(email, cpf));
     }
 
 }

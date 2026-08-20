@@ -7,6 +7,7 @@ import com.fraudetection.auth_service.services.exceptions.InvalidCredentialsExce
 import com.fraudetection.auth_service.services.exceptions.InvalidCurrentPasswordException;
 import com.fraudetection.auth_service.services.exceptions.InvalidRefreshTokenException;
 import com.fraudetection.auth_service.services.exceptions.PasswordMismatchException;
+import com.fraudetection.auth_service.services.exceptions.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -59,6 +60,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handlePasswordMismatch(PasswordMismatchException ex, HttpServletRequest request) {
         log.warn("Password change rejected for request to {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex, HttpServletRequest request) {
+        log.warn("User lookup failed on {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

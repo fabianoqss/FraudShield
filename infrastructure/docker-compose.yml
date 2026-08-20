@@ -44,7 +44,7 @@ services:
       POSTGRES_USER: ${POSTGRES_TRANSACTION_USER}
       POSTGRES_PASSWORD: ${POSTGRES_TRANSACTION_PASSWORD}
     ports:
-      - "5433:5432"
+      - "5443:5432"
     volumes:
       - postgres_transaction_data:/var/lib/postgresql/data
     healthcheck:
@@ -85,6 +85,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+      auth-service:
+        condition: service_healthy
     environment:
       POSTGRES_ACCOUNT_URL: jdbc:postgresql://postgres-account:5432/account_db
       POSTGRES_ACCOUNT_USER: ${POSTGRES_ACCOUNT_USER}
@@ -92,6 +94,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      AUTH_SERVICE_URL: http://auth-service:8081
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8082:8082"

@@ -7,9 +7,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AccountRepository extends JpaRepository<Account, UUID> {
+
+    Optional<Account> findFirstByOwnerId(UUID ownerId);
 
     @Modifying
     @Query("update Account a set a.lockedBalance = a.lockedBalance + :amount where a.id = :accountId")

@@ -3,6 +3,8 @@ package com.fraudetection.account_service.controllers.handlers;
 import com.fraudetection.account_service.dto.response.ErrorResponse;
 import com.fraudetection.account_service.services.exceptions.AccountAccessDeniedException;
 import com.fraudetection.account_service.services.exceptions.AccountNotFoundException;
+import com.fraudetection.account_service.services.exceptions.AuthServiceUnavailableException;
+import com.fraudetection.account_service.services.exceptions.PixKeyNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -31,6 +33,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccountAccessDenied(AccountAccessDeniedException ex, HttpServletRequest request) {
         log.warn("Access denied on {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(PixKeyNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePixKeyNotFound(PixKeyNotFoundException ex, HttpServletRequest request) {
+        log.warn("Deposit rejected: {}", ex.getMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AuthServiceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleAuthServiceUnavailable(AuthServiceUnavailableException ex, HttpServletRequest request) {
+        log.error("Deposit failed: {}", ex.getMessage());
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

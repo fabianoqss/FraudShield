@@ -3,6 +3,7 @@ package com.fraudetection.account_service.controllers;
 import com.fraudetection.account_service.dto.response.AccountResponse;
 import com.fraudetection.account_service.dto.response.BalanceResponse;
 import com.fraudetection.account_service.dto.request.CreateAccountRequest;
+import com.fraudetection.account_service.dto.request.PixDepositRequest;
 import com.fraudetection.account_service.services.AccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,5 +36,10 @@ public class AccountController {
     public ResponseEntity<BalanceResponse> getBalance(@PathVariable UUID id, Authentication authentication) {
         UUID requestingUserId = UUID.fromString(authentication.getName());
         return ResponseEntity.ok(accountService.getBalance(id, requestingUserId));
+    }
+
+    @PostMapping("/accounts/deposit")
+    public ResponseEntity<BalanceResponse> deposit(@Valid @RequestBody PixDepositRequest request) {
+        return ResponseEntity.ok(accountService.depositByPixKey(request));
     }
 }

@@ -4,6 +4,7 @@ import com.fraudetection.auth_service.dto.request.ChangePasswordRequest;
 import com.fraudetection.auth_service.dto.request.LoginRequest;
 import com.fraudetection.auth_service.dto.request.RegisterRequest;
 import com.fraudetection.auth_service.dto.response.AuthResponse;
+import com.fraudetection.auth_service.dto.response.UserLookupResponse;
 import com.fraudetection.auth_service.dto.response.UserResponse;
 import com.fraudetection.auth_service.entities.User;
 import com.fraudetection.auth_service.repositories.UserRepository;
@@ -14,6 +15,8 @@ import com.fraudetection.auth_service.services.exceptions.InvalidCredentialsExce
 import com.fraudetection.auth_service.services.exceptions.InvalidCurrentPasswordException;
 import com.fraudetection.auth_service.services.exceptions.InvalidRefreshTokenException;
 import com.fraudetection.auth_service.services.exceptions.PasswordMismatchException;
+import com.fraudetection.auth_service.services.exceptions.UserNotFoundException;
+import org.springframework.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -87,6 +90,20 @@ public class AuthService {
 
     public void logout(String refreshToken) {
         refreshTokenService.revoke(refreshToken);
+    }
+
+    public UserLookupResponse lookup(String email, String cpf) {
+        User user;
+
+        if (StringUtils.hasText(email)) {
+            user = userRepository.findByEmail(email).orElseThrow(UserNotFoundException::new);
+        } else if (StringUtils.hasText(cpf)) {
+            user = userRepository.findByCpf(cpf).orElseThrow(UserNotFoundException::new);
+        } else {
+            throw new UserNotFoundException();
+        }
+
+        return new UserLookupResponse(user.getId(), user.getFullName(), user.getEmail(), user.getCpf());
     }
 
     @Transactional
