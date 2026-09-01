@@ -123,6 +123,53 @@ services:
       - "8083:8083"
     profiles: ["services"]
 
+  mongo-ledger:
+    image: mongo:7
+    container_name: fraudshield-mongo-ledger
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_LEDGER_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_LEDGER_PASSWORD}
+      MONGO_INITDB_DATABASE: ledger_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_ledger_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin --eval \"db.adminCommand('ping')\" || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ledger-service:
+    build:
+      context: ../ledger-service
+    container_name: fraudshield-ledger-service
+    restart: unless-stopped
+    depends_on:
+      mongo-ledger:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      account-service:
+        condition: service_healthy
+    environment:
+      MONGO_LEDGER_HOST: mongo-ledger
+      MONGO_LEDGER_PORT: 27017
+      MONGO_LEDGER_USER: ${MONGO_LEDGER_USER}
+      MONGO_LEDGER_PASSWORD: ${MONGO_LEDGER_PASSWORD}
+      MONGO_LEDGER_DB: ledger_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ACCOUNT_SERVICE_URL: http://account-service:8082
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+    ports:
+      - "8086:8086"
+    profiles: ["services"]
+
   api-gateway:
     build:
       context: ../api-gateway
@@ -135,10 +182,13 @@ services:
         condition: service_healthy
       transaction-service:
         condition: service_healthy
+      ledger-service:
+        condition: service_healthy
     environment:
       AUTH_SERVICE_URL: http://auth-service:8081
       ACCOUNT_SERVICE_URL: http://account-service:8082
       TRANSACTION_SERVICE_URL: http://transaction-service:8083
+      LEDGER_SERVICE_URL: http://ledger-service:8086
       JWT_SECRET: ${JWT_SECRET}
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
@@ -237,6 +287,7 @@ volumes:
   postgres_auth_data:
   postgres_account_data:
   postgres_transaction_data:
+  mongo_ledger_data:
   prometheus_data:
   tempo_data:
   grafana_data:

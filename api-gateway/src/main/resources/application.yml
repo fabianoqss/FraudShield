@@ -18,6 +18,10 @@ spring:
               uri: ${TRANSACTION_SERVICE_URL:http://localhost:8083}
               predicates:
                 - Path=/transactions/**
+            - id: ledger-service
+              uri: ${LEDGER_SERVICE_URL:http://localhost:8086}
+              predicates:
+                - Path=/ledger/**
 
 jwt:
   secret: ${JWT_SECRET}
