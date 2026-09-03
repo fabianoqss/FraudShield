@@ -56,6 +56,9 @@ public class FraudAnalysis {
     @Column(nullable = false)
     private UUID sourceAccountId;
 
+    @Column(nullable = false)
+    private UUID destinationAccountId;
+
     private String deviceId;
 
     @Column(nullable = false, precision = 19, scale = 4)
