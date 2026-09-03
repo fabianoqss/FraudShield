@@ -53,6 +53,24 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-fraud:
+    image: postgres:16-alpine
+    container_name: fraudshield-postgres-fraud
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fraud_db
+      POSTGRES_USER: ${POSTGRES_FRAUD_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_FRAUD_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_fraud_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_FRAUD_USER} -d fraud_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   auth-service:
     build:
       context: ../auth-service
@@ -168,6 +186,50 @@ services:
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8086:8086"
+    profiles: ["services"]
+
+  fraud-detection-service:
+    build:
+      context: ../fraud-detection-service
+    container_name: fraudshield-fraud-detection-service
+    restart: unless-stopped
+    depends_on:
+      postgres-fraud:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    environment:
+      POSTGRES_FRAUD_URL: jdbc:postgresql://postgres-fraud:5432/fraud_db
+      POSTGRES_FRAUD_USER: ${POSTGRES_FRAUD_USER}
+      POSTGRES_FRAUD_PASSWORD: ${POSTGRES_FRAUD_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ML_MODEL_SERVICE_URL: http://host.docker.internal:8085
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+    ports:
+      - "8084:8084"
+    profiles: ["services"]
+
+  notification-service:
+    build:
+      context: ../notification-service
+    container_name: fraudshield-notification-service
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+    ports:
+      - "8087:8087"
     profiles: ["services"]
 
   api-gateway:
@@ -287,6 +349,7 @@ volumes:
   postgres_auth_data:
   postgres_account_data:
   postgres_transaction_data:
+  postgres_fraud_data:
   mongo_ledger_data:
   prometheus_data:
   tempo_data:
