@@ -1,0 +1,26 @@
+{
+  "modelVersion": "v1.0.0",
+  "sklearnVersion": "1.6.1",
+  "featureVersion": 1,
+  "featureNames": [
+    "amountBand",
+    "hourOfDay",
+    "dayOfWeek",
+    "isPIX",
+    "isCREDIT",
+    "isDEBIT",
+    "isNewDevice",
+    "isForeignIp",
+    "transactionsLastHour",
+    "transactionsLast24Hours",
+    "averageBand",
+    "amountToAverageHundredths",
+    "hasNoHistory"
+  ],
+  "seed": 42,
+  "samples": 20000,
+  "testSamples": 4000,
+  "syntheticFraudRate": 0.25145,
+  "rocAuc": 0.8311839052525196,
+  "averagePrecision": 0.6522006461902299
+}
