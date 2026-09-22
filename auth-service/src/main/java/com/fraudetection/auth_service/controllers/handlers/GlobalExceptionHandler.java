@@ -8,6 +8,7 @@ import com.fraudetection.auth_service.services.exceptions.InvalidCredentialsExce
 import com.fraudetection.auth_service.services.exceptions.InvalidCurrentPasswordException;
 import com.fraudetection.auth_service.services.exceptions.InvalidRefreshTokenException;
 import com.fraudetection.auth_service.services.exceptions.PasswordMismatchException;
+import com.fraudetection.auth_service.services.exceptions.TooManyLoginAttemptsException;
 import com.fraudetection.auth_service.services.exceptions.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex, HttpServletRequest request) {
         log.warn("Login rejected for request to {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(TooManyLoginAttemptsException.class)
+    public ResponseEntity<ErrorResponse> handleTooManyLoginAttempts(TooManyLoginAttemptsException ex, HttpServletRequest request) {
+        log.warn("Login throttled for request to {}", request.getRequestURI());
+        return buildResponse(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request);
     }
 
     @ExceptionHandler(InvalidRefreshTokenException.class)
