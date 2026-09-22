@@ -18,8 +18,17 @@ server:
   port: 8081
 
 jwt:
-  secret: ${JWT_SECRET}
+  issuer: ${JWT_ISSUER:fraudshield-auth-service}
+  private-key: ${JWT_PRIVATE_KEY:}
   expiration-ms: ${JWT_EXPIRATION_MS:900000}
+  service-token-expiration-ms: ${SERVICE_TOKEN_EXPIRATION_MS:300000}
+
+service-clients:
+  clients:
+    account-service:
+      secret: ${SERVICE_CLIENT_ACCOUNT_SECRET:}
+      scopes:
+        - users:lookup
 
 refresh-token:
   expiration-ms: ${REFRESH_TOKEN_EXPIRATION_MS:604800000}

@@ -1,7 +1,6 @@
 package com.fraudetection.fraud_detection_service.services;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -9,20 +8,22 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 public class IdempotencyService {
 
-
-    private static final String PREFIX = "processed:";
-
     private final StringRedisTemplate redisTemplate;
+    private final String keyPrefix;
 
-    public boolean alreadyProcessed(UUID eventId){
-        return Boolean.TRUE.equals(redisTemplate.hasKey(PREFIX + eventId));
+    public IdempotencyService(StringRedisTemplate redisTemplate,
+                              @Value("${spring.application.name}") String applicationName) {
+        this.redisTemplate = redisTemplate;
+        this.keyPrefix = "processed:" + applicationName + ":";
     }
 
-    public void markProcessed(UUID eventId){
-        redisTemplate.opsForValue().set(PREFIX + eventId, "true", 24, TimeUnit.HOURS);
+    public boolean alreadyProcessed(UUID eventId) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(keyPrefix + eventId));
     }
 
+    public void markProcessed(UUID eventId) {
+        redisTemplate.opsForValue().set(keyPrefix + eventId, "true", 24, TimeUnit.HOURS);
+    }
 }

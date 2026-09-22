@@ -7,12 +7,19 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 public class FeatureEngineerService {
+
+    private static final Pattern IPV4_PATTERN = Pattern.compile(
+            "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
+    );
 
     private final FraudAnalysisRepository fraudAnalysisRepository;
 
@@ -46,15 +53,18 @@ public class FeatureEngineerService {
         );
     }
 
-    private boolean isForeignIp(String ipAddress) {
-        if (ipAddress == null) {
+    boolean isForeignIp(String ipAddress) {
+        if (ipAddress == null || !IPV4_PATTERN.matcher(ipAddress).matches()) {
             return false;
         }
 
-        return !(ipAddress.startsWith("10.")
-                || ipAddress.startsWith("192.168.")
-                || ipAddress.startsWith("127.")
-                || ipAddress.startsWith("172."));
+        try {
+            InetAddress address = InetAddress.getByName(ipAddress);
+            return !(address.isSiteLocalAddress() || address.isLoopbackAddress());
+        } catch (UnknownHostException e) {
+            return false;
+        }
     }
 
 }
+

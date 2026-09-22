@@ -8,7 +8,6 @@ import com.fraudetection.ledger_service.services.LedgerQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,10 +27,8 @@ public class LedgerController {
     public ResponseEntity<LedgerEntryPageResponse> getAccountLedger(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            Authentication authentication) {
-        UUID requestingUserId = UUID.fromString(authentication.getName());
-        accountServiceClient.verifyOwnership(id, requestingUserId);
+            @RequestParam(defaultValue = "20") int size) {
+        accountServiceClient.verifyOwnership(id);
 
         Page<LedgerEntry> result = ledgerQueryService.getEntriesForAccount(id, page, size);
         List<LedgerEntryResponse> entries = result.getContent().stream()

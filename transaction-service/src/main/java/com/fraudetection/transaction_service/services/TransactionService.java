@@ -25,12 +25,12 @@ public class TransactionService {
     private final AccountServiceClient accountServiceClient;
 
     @Transactional
-    public TransactionResponse createTransaction(TransactionRequest request, UUID requestingUserId) {
+    public TransactionResponse createTransaction(TransactionRequest request) {
         if (transactionRepository.existsByIdempotencyKey(request.idempotencyKey())) {
             throw new DuplicateIdempotencyKeyException(request.idempotencyKey());
         }
 
-        accountServiceClient.verifySourceAccountOwnership(request.sourceAccountId(), requestingUserId);
+        accountServiceClient.verifySourceAccountOwnership(request.sourceAccountId());
 
         Transaction transaction = new Transaction();
         transaction.setSourceAccountId(request.sourceAccountId());
@@ -52,6 +52,11 @@ public class TransactionService {
     public TransactionResponse getTransaction(UUID id) {
         Transaction transaction = transactionRepository.findById(id)
                 .orElseThrow(() -> new TransactionNotFoundException(id));
+
+        if (!accountServiceClient.ownsAccount(transaction.getSourceAccountId())
+                && !accountServiceClient.ownsAccount(transaction.getDestinationAccountId())) {
+            throw new TransactionNotFoundException(id);
+        }
 
         return toResponse(transaction);
     }

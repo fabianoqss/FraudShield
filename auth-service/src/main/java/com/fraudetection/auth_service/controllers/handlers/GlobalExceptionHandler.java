@@ -3,6 +3,7 @@ package com.fraudetection.auth_service.controllers.handlers;
 import com.fraudetection.auth_service.dto.response.ErrorResponse;
 import com.fraudetection.auth_service.services.exceptions.DuplicateCpfException;
 import com.fraudetection.auth_service.services.exceptions.EmailAlreadyExistsException;
+import com.fraudetection.auth_service.services.exceptions.InvalidClientCredentialsException;
 import com.fraudetection.auth_service.services.exceptions.InvalidCredentialsException;
 import com.fraudetection.auth_service.services.exceptions.InvalidCurrentPasswordException;
 import com.fraudetection.auth_service.services.exceptions.InvalidRefreshTokenException;
@@ -47,6 +48,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidRefreshTokenException.class)
     public ResponseEntity<ErrorResponse> handleInvalidRefreshToken(InvalidRefreshTokenException ex, HttpServletRequest request) {
         log.warn("Refresh token rejected for request to {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidClientCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidClientCredentials(InvalidClientCredentialsException ex, HttpServletRequest request) {
+        log.warn("Service token rejected for request to {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 

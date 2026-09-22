@@ -3,6 +3,7 @@ package com.fraudetection.account_service.services;
 import com.fraudetection.account_service.clients.AuthServiceClient;
 import com.fraudetection.account_service.dto.response.AccountResponse;
 import com.fraudetection.account_service.dto.response.BalanceResponse;
+import com.fraudetection.account_service.dto.response.DepositResponse;
 import com.fraudetection.account_service.dto.response.UserLookupResponse;
 import com.fraudetection.account_service.dto.request.CreateAccountRequest;
 import com.fraudetection.account_service.dto.request.PixDepositRequest;
@@ -15,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.UUID;
 
@@ -58,7 +58,7 @@ public class AccountService {
     }
 
     @Transactional
-    public BalanceResponse depositByPixKey(PixDepositRequest request) {
+    public DepositResponse depositByPixKey(PixDepositRequest request) {
         UserLookupResponse user = request.isEmailKey()
                 ? authServiceClient.lookupByEmail(request.pixKey())
                 : authServiceClient.lookupByCpf(request.pixKey());
@@ -68,17 +68,7 @@ public class AccountService {
 
         accountRepository.creditBalance(account.getId(), request.amount());
 
-        BigDecimal newBalance = account.getBalance().add(request.amount());
-
-        return new BalanceResponse(
-                account.getOwnerName(),
-                account.getId(),
-                newBalance.setScale(2, RoundingMode.HALF_UP),
-                account.getLockedBalance().setScale(2, RoundingMode.HALF_UP),
-                newBalance.subtract(account.getLockedBalance()).setScale(2, RoundingMode.HALF_UP),
-                user.email(),
-                user.cpf()
-        );
+        return new DepositResponse(account.getOwnerName(), request.amount().setScale(2, RoundingMode.HALF_UP));
     }
 
     private AccountResponse toAccountResponse(Account account) {

@@ -83,8 +83,9 @@ services:
       POSTGRES_AUTH_URL: jdbc:postgresql://postgres-auth:5432/auth_db
       POSTGRES_AUTH_USER: ${POSTGRES_AUTH_USER}
       POSTGRES_AUTH_PASSWORD: ${POSTGRES_AUTH_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-900000}
+      SERVICE_CLIENT_ACCOUNT_SECRET: ${SERVICE_CLIENT_ACCOUNT_SECRET}
       REFRESH_TOKEN_EXPIRATION_MS: ${REFRESH_TOKEN_EXPIRATION_MS:-604800000}
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
@@ -113,6 +114,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       AUTH_SERVICE_URL: http://auth-service:8081
+      AUTH_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
+      SERVICE_CLIENT_ACCOUNT_SECRET: ${SERVICE_CLIENT_ACCOUNT_SECRET}
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8082:8082"
@@ -136,6 +139,7 @@ services:
       POSTGRES_TRANSACTION_PASSWORD: ${POSTGRES_TRANSACTION_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       ACCOUNT_SERVICE_URL: http://account-service:8082
+      AUTH_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8083:8083"
@@ -183,6 +187,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       ACCOUNT_SERVICE_URL: http://account-service:8082
+      AUTH_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8086:8086"
@@ -251,7 +256,7 @@ services:
       ACCOUNT_SERVICE_URL: http://account-service:8082
       TRANSACTION_SERVICE_URL: http://transaction-service:8083
       LEDGER_SERVICE_URL: http://ledger-service:8086
-      JWT_SECRET: ${JWT_SECRET}
+      AUTH_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8080:8080"

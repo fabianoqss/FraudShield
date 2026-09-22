@@ -1,44 +1,78 @@
 package com.fraudetection.auth_service.security;
 
 import com.fraudetection.auth_service.entities.User;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Date;
+import java.util.List;
 
 @Service
 public class JwtService {
 
-    private final SecretKey signingKey;
+    private final JwtEncoder jwtEncoder;
+    private final String issuer;
     private final long expirationMs;
+    private final long serviceTokenExpirationMs;
 
     public JwtService(
-            @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration-ms}") long expirationMs
+            JwtEncoder jwtEncoder,
+            @Value("${jwt.issuer}") String issuer,
+            @Value("${jwt.expiration-ms}") long expirationMs,
+            @Value("${jwt.service-token-expiration-ms}") long serviceTokenExpirationMs
     ) {
-        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.jwtEncoder = jwtEncoder;
+        this.issuer = issuer;
         this.expirationMs = expirationMs;
+        this.serviceTokenExpirationMs = serviceTokenExpirationMs;
     }
 
     public String generateToken(User user) {
         Instant issuedAt = Instant.now();
 
-        return Jwts.builder()
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer(issuer)
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .claim("fullName", user.getFullName())
-                .issuedAt(Date.from(issuedAt))
-                .expiration(Date.from(issuedAt.plusMillis(expirationMs)))
-                .signWith(signingKey)
-                .compact();
+                .claim("token_type", "user")
+                .issuedAt(issuedAt)
+                .expiresAt(issuedAt.plusMillis(expirationMs))
+                .build();
+
+        return encode(claims);
+    }
+
+    public String generateServiceToken(String clientId, List<String> scopes) {
+        Instant issuedAt = Instant.now();
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer(issuer)
+                .subject(clientId)
+                .claim("scope", String.join(" ", scopes))
+                .claim("token_type", "service")
+                .issuedAt(issuedAt)
+                .expiresAt(issuedAt.plusMillis(serviceTokenExpirationMs))
+                .build();
+
+        return encode(claims);
     }
 
     public long getExpirationSeconds() {
         return expirationMs / 1000;
+    }
+
+    public long getServiceTokenExpirationSeconds() {
+        return serviceTokenExpirationMs / 1000;
+    }
+
+    private String encode(JwtClaimsSet claims) {
+        JwsHeader header = JwsHeader.with(SignatureAlgorithm.RS256).build();
+        return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
     }
 }

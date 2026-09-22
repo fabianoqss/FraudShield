@@ -8,11 +8,6 @@ public record BalanceResponse(
         UUID accountId,
         BigDecimal balance,
         BigDecimal lockedBalance,
-        BigDecimal availableBalance,
-        String email,
-        String cpf
+        BigDecimal availableBalance
 ) {
-    public BalanceResponse(String name, UUID accountId, BigDecimal balance, BigDecimal lockedBalance, BigDecimal availableBalance) {
-        this(name, accountId, balance, lockedBalance, availableBalance, null, null);
-    }
 }

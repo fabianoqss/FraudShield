@@ -18,15 +18,18 @@ public class AccountServiceClient {
 
     private final RestClient restClient;
 
-    public AccountServiceClient(@Value("${ACCOUNT_SERVICE_URL:http://localhost:8082}") String accountServiceUrl) {
-        this.restClient = RestClient.create(accountServiceUrl);
+    public AccountServiceClient(@Value("${ACCOUNT_SERVICE_URL:http://localhost:8082}") String accountServiceUrl,
+                                BearerTokenInterceptor bearerTokenInterceptor) {
+        this.restClient = RestClient.builder()
+                .baseUrl(accountServiceUrl)
+                .requestInterceptor(bearerTokenInterceptor)
+                .build();
     }
 
-    public void verifySourceAccountOwnership(UUID accountId, UUID requestingUserId) {
+    public void verifySourceAccountOwnership(UUID accountId) {
         try {
             restClient.get()
                     .uri("/accounts/{id}/balance", accountId)
-                    .header("X-User-Id", requestingUserId.toString())
                     .retrieve()
                     .toBodilessEntity();
         } catch (HttpClientErrorException.NotFound e) {
@@ -35,6 +38,21 @@ public class AccountServiceClient {
             throw new SourceAccountAccessDeniedException(accountId);
         } catch (RestClientException e) {
             log.error("Failed to verify ownership of source account {} with account-service", accountId, e);
+            throw new AccountServiceUnavailableException();
+        }
+    }
+
+    public boolean ownsAccount(UUID accountId) {
+        try {
+            restClient.get()
+                    .uri("/accounts/{id}/balance", accountId)
+                    .retrieve()
+                    .toBodilessEntity();
+            return true;
+        } catch (HttpClientErrorException.NotFound | HttpClientErrorException.Forbidden e) {
+            return false;
+        } catch (RestClientException e) {
+            log.error("Failed to check ownership of account {} with account-service", accountId, e);
             throw new AccountServiceUnavailableException();
         }
     }
