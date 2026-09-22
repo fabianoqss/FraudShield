@@ -52,6 +52,8 @@ transaction-service → [transaction.created] → fraud-detection-service
 
 ## Security model
 
+> Full details, the list of fixed vulnerabilities and the open risks: [`SECURITY.md`](./SECURITY.md).
+
 Every HTTP-facing service is an **OAuth2 Resource Server** and validates the JWT itself. No service trusts identity headers such as `X-User-Id` — a request that reaches a service port directly still needs a valid token.
 
 - **Signing:** `auth-service` signs access tokens with **RS256**. The private key (`JWT_PRIVATE_KEY`) lives only in `auth-service`.
@@ -67,11 +69,12 @@ Every HTTP-facing service is an **OAuth2 Resource Server** and validates the JWT
 - **Funds integrity:** a transfer is rejected up front if it exceeds the available balance or targets an unknown account. `account-service` reserves funds with a conditional update, settles each transaction at most once (redelivered events are ignored) and never debits more than is reserved or available.
 - **Local infrastructure:** every port published by `docker-compose` is bound to `127.0.0.1`.
 
-### Known limitations
-- Kafka and Redis run without authentication. They are only reachable from the host, but a real deployment needs SASL/ACLs and a Redis password (Phase 3).
-- `POST /accounts/deposit` simulates money arriving from another bank, so anyone can credit any PIX key. That is intentional for the demo and must not exist in a real system.
-- If an approved transfer cannot be settled (e.g. the balance changed), `account-service` logs it and moves no money, but no compensation event is published, so other services still see the transaction as approved.
-- Login throttling is per instance and keyed by e-mail; a multi-instance deployment needs a shared store (Redis) and per-IP limits at the gateway.
+### Known risks
+Four risks remain open. They are described in detail, with scenarios and fixes, in [`SECURITY.md`](./SECURITY.md#3-known-risks):
+- Kafka and Redis run without authentication (mitigated: bound to localhost; fix in Phase 3).
+- The public PIX deposit can credit any key. This is intentional, to simulate incoming transfers.
+- A failed settlement publishes no compensation event (data consistency, not exploitable).
+- Login throttling is in memory and per instance.
 
 ---
 
