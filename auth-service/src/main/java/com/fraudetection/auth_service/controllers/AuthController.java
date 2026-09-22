@@ -6,9 +6,12 @@ import com.fraudetection.auth_service.dto.request.ChangePasswordRequest;
 import com.fraudetection.auth_service.dto.request.LoginRequest;
 import com.fraudetection.auth_service.dto.request.RefreshTokenRequest;
 import com.fraudetection.auth_service.dto.request.RegisterRequest;
+import com.fraudetection.auth_service.dto.request.ServiceTokenRequest;
+import com.fraudetection.auth_service.dto.response.ServiceTokenResponse;
 import com.fraudetection.auth_service.dto.response.UserLookupResponse;
 import com.fraudetection.auth_service.dto.response.UserResponse;
 import com.fraudetection.auth_service.services.AuthService;
+import com.fraudetection.auth_service.services.ServiceTokenService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,6 +33,7 @@ import java.util.UUID;
 public class AuthController {
 
     private final AuthService authService;
+    private final ServiceTokenService serviceTokenService;
 
     @PostMapping(value = "/register")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
@@ -53,6 +57,11 @@ public class AuthController {
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
         authService.logout(request.refreshToken());
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/service-token")
+    public ResponseEntity<ServiceTokenResponse> serviceToken(@Valid @RequestBody ServiceTokenRequest request) {
+        return ResponseEntity.ok(serviceTokenService.issue(request));
     }
 
     @PutMapping(value = "/password")
