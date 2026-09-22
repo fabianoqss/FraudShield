@@ -6,6 +6,7 @@ import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TransactionDeniedPayload(
-        UUID transactionId
+        UUID transactionId,
+        UUID sourceAccountId
 ) {
 }

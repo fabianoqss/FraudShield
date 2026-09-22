@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_AUTH_USER}
       POSTGRES_PASSWORD: ${POSTGRES_AUTH_PASSWORD}
     ports:
-      - "5436:5432"
+      - "127.0.0.1:5436:5432"
     volumes:
       - postgres_auth_data:/var/lib/postgresql/data
     healthcheck:
@@ -26,7 +26,7 @@ services:
       POSTGRES_USER: ${POSTGRES_ACCOUNT_USER}
       POSTGRES_PASSWORD: ${POSTGRES_ACCOUNT_PASSWORD}
     ports:
-      - "5442:5432"
+      - "127.0.0.1:5442:5432"
     volumes:
       - postgres_account_data:/var/lib/postgresql/data
     healthcheck:
@@ -44,7 +44,7 @@ services:
       POSTGRES_USER: ${POSTGRES_TRANSACTION_USER}
       POSTGRES_PASSWORD: ${POSTGRES_TRANSACTION_PASSWORD}
     ports:
-      - "5443:5432"
+      - "127.0.0.1:5443:5432"
     volumes:
       - postgres_transaction_data:/var/lib/postgresql/data
     healthcheck:
@@ -62,7 +62,7 @@ services:
       POSTGRES_USER: ${POSTGRES_FRAUD_USER}
       POSTGRES_PASSWORD: ${POSTGRES_FRAUD_PASSWORD}
     ports:
-      - "5434:5432"
+      - "127.0.0.1:5434:5432"
     volumes:
       - postgres_fraud_data:/var/lib/postgresql/data
     healthcheck:
@@ -89,7 +89,7 @@ services:
       REFRESH_TOKEN_EXPIRATION_MS: ${REFRESH_TOKEN_EXPIRATION_MS:-604800000}
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     profiles: ["services"]
 
   account-service:
@@ -118,7 +118,7 @@ services:
       SERVICE_CLIENT_ACCOUNT_SECRET: ${SERVICE_CLIENT_ACCOUNT_SECRET}
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
-      - "8082:8082"
+      - "127.0.0.1:8082:8082"
     profiles: ["services"]
 
   transaction-service:
@@ -142,7 +142,7 @@ services:
       AUTH_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
-      - "8083:8083"
+      - "127.0.0.1:8083:8083"
     profiles: ["services"]
 
   mongo-ledger:
@@ -154,7 +154,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_LEDGER_PASSWORD}
       MONGO_INITDB_DATABASE: ledger_db
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongo_ledger_data:/data/db
     healthcheck:
@@ -190,7 +190,7 @@ services:
       AUTH_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
-      - "8086:8086"
+      - "127.0.0.1:8086:8086"
     profiles: ["services"]
 
   fraud-detection-service:
@@ -215,7 +215,7 @@ services:
       ML_MODEL_SERVICE_URL: http://host.docker.internal:8085
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
-      - "8084:8084"
+      - "127.0.0.1:8084:8084"
     profiles: ["services"]
 
   notification-service:
@@ -234,7 +234,7 @@ services:
       REDIS_PORT: 6379
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
-      - "8087:8087"
+      - "127.0.0.1:8087:8087"
     profiles: ["services"]
 
   api-gateway:
@@ -259,7 +259,7 @@ services:
       AUTH_JWKS_URI: http://auth-service:8081/.well-known/jwks.json
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     profiles: ["services"]
 
   zookeeper:
@@ -270,7 +270,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "2181:2181"
+      - "127.0.0.1:2181:2181"
 
   kafka:
     image: confluentinc/cp-kafka:7.6.1
@@ -288,14 +288,14 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_NUM_PARTITIONS: 3
     ports:
-      - "9092:9092"
+      - "127.0.0.1:9092:9092"
 
   redis:
     image: redis:7.4-alpine
     container_name: fraudshield-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -312,7 +312,7 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.117.0
@@ -324,8 +324,8 @@ services:
     depends_on:
       - tempo
     ports:
-      - "4317:4317"
-      - "4318:4318"
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
 
   tempo:
     image: grafana/tempo:2.6.1
@@ -348,7 +348,7 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
     ports:
-      - "3001:3000"
+      - "127.0.0.1:3001:3000"
 
 volumes:
   postgres_auth_data:

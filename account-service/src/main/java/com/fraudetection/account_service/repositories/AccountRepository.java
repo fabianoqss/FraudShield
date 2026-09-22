@@ -15,8 +15,14 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     Optional<Account> findFirstByOwnerId(UUID ownerId);
 
     @Modifying
-    @Query("update Account a set a.lockedBalance = a.lockedBalance + :amount where a.id = :accountId")
-    void increaseLockedBalance(@Param("accountId") UUID accountId, @Param("amount") BigDecimal amount);
+    @Query("update Account a set a.lockedBalance = a.lockedBalance + :amount "
+            + "where a.id = :accountId and a.balance - a.lockedBalance >= :amount")
+    int reserveFunds(@Param("accountId") UUID accountId, @Param("amount") BigDecimal amount);
+
+    @Modifying
+    @Query("update Account a set a.balance = a.balance - :amount "
+            + "where a.id = :accountId and a.balance - a.lockedBalance >= :amount")
+    int debitIfAvailable(@Param("accountId") UUID accountId, @Param("amount") BigDecimal amount);
 
     @Modifying
     @Query("update Account a set a.balance = a.balance - :amount, a.lockedBalance = a.lockedBalance - :lockAmount where a.id = :accountId")

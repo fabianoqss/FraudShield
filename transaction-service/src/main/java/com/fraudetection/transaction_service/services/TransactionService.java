@@ -7,12 +7,15 @@ import com.fraudetection.transaction_service.entities.Transaction;
 import com.fraudetection.transaction_service.enums.PaymentStatus;
 import com.fraudetection.transaction_service.kafka.producers.TransactionCreatedProducer;
 import com.fraudetection.transaction_service.repositories.TransactionRepository;
+import com.fraudetection.transaction_service.services.exceptions.DestinationAccountNotFoundException;
 import com.fraudetection.transaction_service.services.exceptions.DuplicateIdempotencyKeyException;
+import com.fraudetection.transaction_service.services.exceptions.InsufficientFundsException;
 import com.fraudetection.transaction_service.services.exceptions.TransactionNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -30,7 +33,14 @@ public class TransactionService {
             throw new DuplicateIdempotencyKeyException(request.idempotencyKey());
         }
 
-        accountServiceClient.verifySourceAccountOwnership(request.sourceAccountId());
+        BigDecimal availableBalance = accountServiceClient.getOwnedAvailableBalance(request.sourceAccountId());
+        if (availableBalance.compareTo(request.amount()) < 0) {
+            throw new InsufficientFundsException(request.sourceAccountId());
+        }
+
+        if (!accountServiceClient.accountExists(request.destinationAccountId())) {
+            throw new DestinationAccountNotFoundException(request.destinationAccountId());
+        }
 
         Transaction transaction = new Transaction();
         transaction.setSourceAccountId(request.sourceAccountId());
