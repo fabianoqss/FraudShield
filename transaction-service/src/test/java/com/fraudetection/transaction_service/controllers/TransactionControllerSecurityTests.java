@@ -1,6 +1,7 @@
 package com.fraudetection.transaction_service.controllers;
 
 import com.fraudetection.transaction_service.security.SecurityConfig;
+import com.fraudetection.transaction_service.security.TokenTypeAuthoritiesConverter;
 import com.fraudetection.transaction_service.services.TransactionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
@@ -52,7 +54,7 @@ class TransactionControllerSecurityTests {
 
     @Test
     void acceptsJwt() throws Exception {
-        mockMvc.perform(get(PATH).with(jwt().jwt(token -> token.subject(UUID.randomUUID().toString()))))
+        mockMvc.perform(get(PATH).with(userJwt(UUID.randomUUID())))
                 .andExpect(status().isOk());
         verify(transactionService).getTransaction(ID);
     }
@@ -60,7 +62,7 @@ class TransactionControllerSecurityTests {
     @Test
     void createsTransactionWithJwt() throws Exception {
         mockMvc.perform(post("/transactions")
-                        .with(jwt().jwt(token -> token.subject(UUID.randomUUID().toString())))
+                        .with(userJwt(UUID.randomUUID()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -81,5 +83,22 @@ class TransactionControllerSecurityTests {
         mockMvc.perform(get(PATH).header("Authorization", "Bearer invalid"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Missing or invalid bearer token"));
+    }
+
+    @Test
+    void serviceTokenCannotCallUserRoutes() throws Exception {
+        mockMvc.perform(get(PATH).with(jwt()
+                        .jwt(token -> token.subject("account-service").claim("token_type", "service").claim("scope", "users:lookup"))
+                        .authorities(new TokenTypeAuthoritiesConverter())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access denied"));
+        verifyNoInteractions(transactionService);
+    }
+
+
+    private static SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor userJwt(UUID userId) {
+        return jwt()
+                .jwt(token -> token.subject(userId.toString()).claim("token_type", "user"))
+                .authorities(new TokenTypeAuthoritiesConverter());
     }
 }

@@ -40,6 +40,7 @@ public class JwtService {
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .claim("fullName", user.getFullName())
+                .claim("token_type", "user")
                 .issuedAt(issuedAt)
                 .expiresAt(issuedAt.plusMillis(expirationMs))
                 .build();
@@ -54,6 +55,7 @@ public class JwtService {
                 .issuer(issuer)
                 .subject(clientId)
                 .claim("scope", String.join(" ", scopes))
+                .claim("token_type", "service")
                 .issuedAt(issuedAt)
                 .expiresAt(issuedAt.plusMillis(serviceTokenExpirationMs))
                 .build();

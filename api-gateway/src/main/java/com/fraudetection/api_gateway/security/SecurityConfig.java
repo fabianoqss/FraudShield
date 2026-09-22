@@ -9,6 +9,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -30,10 +31,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/service-token", "/auth/users/lookup").denyAll()
                         .requestMatchers("/auth/login", "/auth/register", "/auth/refresh", "/auth/logout", "/accounts/deposit", "/error", "/actuator/**").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().hasRole(TokenTypeAuthoritiesConverter.USER_ROLE)
                 )
-                .oauth2ResourceServer(resourceServer -> resourceServer.jwt(jwt -> {}));
+                .oauth2ResourceServer(resourceServer -> resourceServer.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
         return http.build();
+    }
+
+    private JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(new TokenTypeAuthoritiesConverter());
+        return converter;
     }
 }

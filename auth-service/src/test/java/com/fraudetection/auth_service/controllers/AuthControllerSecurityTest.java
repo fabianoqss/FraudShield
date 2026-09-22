@@ -98,6 +98,17 @@ class AuthControllerSecurityTest {
     }
 
     @Test
+    void serviceTokenCannotChangePassword() throws Exception {
+        String serviceToken = jwtService.generateServiceToken("account-service", List.of("users:lookup"));
+
+        mockMvc.perform(put("/auth/password")
+                        .header("Authorization", "Bearer " + serviceToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(CHANGE_PASSWORD_BODY))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void lookupWithoutTokenIsUnauthorized() throws Exception {
         mockMvc.perform(get("/auth/users/lookup").param("email", "ana@example.com"))
                 .andExpect(status().isUnauthorized());

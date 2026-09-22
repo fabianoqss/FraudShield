@@ -18,6 +18,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
@@ -64,10 +65,10 @@ public class SecurityConfig {
                         .requestMatchers("/auth/register", "/auth/login", "/auth/refresh", "/auth/logout", "/auth/service-token",
                                 "/.well-known/jwks.json", "/error", "/actuator/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/users/lookup").hasAuthority("SCOPE_users:lookup")
-                        .anyRequest().authenticated()
+                        .anyRequest().hasRole(TokenTypeAuthoritiesConverter.USER_ROLE)
                 )
                 .oauth2ResourceServer(resourceServer -> resourceServer
-                        .jwt(jwt -> jwt.authenticationManager(new ProviderManager(new JwtAuthenticationProvider(jwtDecoder))))
+                        .jwt(jwt -> jwt.authenticationManager(new ProviderManager(jwtAuthenticationProvider())))
                         .authenticationEntryPoint(authenticationEntryPoint())
                         .accessDeniedHandler(accessDeniedHandler())
                 )
@@ -77,6 +78,14 @@ public class SecurityConfig {
                 );
 
         return http.build();
+    }
+
+    private JwtAuthenticationProvider jwtAuthenticationProvider() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(new TokenTypeAuthoritiesConverter());
+        JwtAuthenticationProvider provider = new JwtAuthenticationProvider(jwtDecoder);
+        provider.setJwtAuthenticationConverter(converter);
+        return provider;
     }
 
     private void writeError(HttpServletRequest request, HttpServletResponse response, HttpStatus status, String message)

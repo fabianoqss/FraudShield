@@ -81,6 +81,7 @@ class GatewaySecurityTest {
         when(jwtDecoder.decode("user-token")).thenReturn(Jwt.withTokenValue("user-token")
                 .header("alg", "RS256")
                 .subject(UUID.randomUUID().toString())
+                .claim("token_type", "user")
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build());
@@ -89,6 +90,22 @@ class GatewaySecurityTest {
                         .header("Authorization", "Bearer user-token"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Bearer user-token"));
+    }
+
+    @Test
+    void serviceTokenIsNotAcceptedAtTheEdge() throws Exception {
+        when(jwtDecoder.decode("service-token")).thenReturn(Jwt.withTokenValue("service-token")
+                .header("alg", "RS256")
+                .subject("account-service")
+                .claim("token_type", "service")
+                .claim("scope", "users:lookup")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build());
+
+        mockMvc.perform(get("/transactions/{id}", UUID.randomUUID())
+                        .header("Authorization", "Bearer service-token"))
+                .andExpect(status().isForbidden());
     }
 
     @Test

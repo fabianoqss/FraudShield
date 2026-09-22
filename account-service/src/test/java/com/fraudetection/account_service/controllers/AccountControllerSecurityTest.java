@@ -2,6 +2,7 @@ package com.fraudetection.account_service.controllers;
 
 import com.fraudetection.account_service.dto.response.BalanceResponse;
 import com.fraudetection.account_service.security.SecurityConfig;
+import com.fraudetection.account_service.security.TokenTypeAuthoritiesConverter;
 import com.fraudetection.account_service.services.AccountService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -70,7 +72,7 @@ class AccountControllerSecurityTest {
                 new BalanceResponse("Ana Souza", accountId, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.TEN));
 
         mockMvc.perform(get("/accounts/{id}/balance", accountId)
-                        .with(jwt().jwt(token -> token.subject(userId.toString()))))
+                        .with(userJwt(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountId").value(accountId.toString()));
 
@@ -88,5 +90,23 @@ class AccountControllerSecurityTest {
                                 {"pixKey":"ana@example.com","amount":10}
                                 """))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void serviceTokenCannotCallUserRoutes() throws Exception {
+        mockMvc.perform(get("/accounts/{id}/balance", UUID.randomUUID()).with(jwt()
+                        .jwt(token -> token.subject("account-service").claim("token_type", "service").claim("scope", "users:lookup"))
+                        .authorities(new TokenTypeAuthoritiesConverter())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access denied"));
+
+        verifyNoInteractions(accountService);
+    }
+
+
+    private static SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor userJwt(UUID userId) {
+        return jwt()
+                .jwt(token -> token.subject(userId.toString()).claim("token_type", "user"))
+                .authorities(new TokenTypeAuthoritiesConverter());
     }
 }

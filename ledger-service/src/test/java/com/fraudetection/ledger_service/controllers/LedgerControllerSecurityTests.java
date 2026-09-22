@@ -1,6 +1,7 @@
 package com.fraudetection.ledger_service.controllers;
 
 import com.fraudetection.ledger_service.security.SecurityConfig;
+import com.fraudetection.ledger_service.security.TokenTypeAuthoritiesConverter;
 import com.fraudetection.ledger_service.clients.AccountServiceClient;
 import com.fraudetection.ledger_service.services.LedgerQueryService;
 import org.springframework.data.domain.Page;
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
@@ -56,7 +58,7 @@ class LedgerControllerSecurityTests {
     @Test
     void acceptsJwt() throws Exception {
         when(ledgerQueryService.getEntriesForAccount(ID, 0, 20)).thenReturn(Page.empty());
-        mockMvc.perform(get(PATH).with(jwt().jwt(token -> token.subject(UUID.randomUUID().toString()))))
+        mockMvc.perform(get(PATH).with(userJwt(UUID.randomUUID())))
                 .andExpect(status().isOk());
         verify(accountServiceClient).verifyOwnership(ID);
     }
@@ -67,5 +69,21 @@ class LedgerControllerSecurityTests {
         mockMvc.perform(get(PATH).header("Authorization", "Bearer invalid"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Missing or invalid bearer token"));
+    }
+
+    @Test
+    void serviceTokenCannotCallUserRoutes() throws Exception {
+        mockMvc.perform(get(PATH).with(jwt()
+                        .jwt(token -> token.subject("account-service").claim("token_type", "service").claim("scope", "users:lookup"))
+                        .authorities(new TokenTypeAuthoritiesConverter())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access denied"));
+    }
+
+
+    private static SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor userJwt(UUID userId) {
+        return jwt()
+                .jwt(token -> token.subject(userId.toString()).claim("token_type", "user"))
+                .authorities(new TokenTypeAuthoritiesConverter());
     }
 }

@@ -45,6 +45,7 @@ class JwtServiceTest {
         assertThat(jwt.getClaimAsString("iss")).isEqualTo(ISSUER);
         assertThat(jwt.getClaimAsString("email")).isEqualTo("ana@example.com");
         assertThat(jwt.getClaimAsString("fullName")).isEqualTo("Ana Souza");
+        assertThat(jwt.getClaimAsString("token_type")).isEqualTo("user");
         assertThat(jwt.hasClaim("scope")).isFalse();
     }
 
@@ -54,6 +55,7 @@ class JwtServiceTest {
 
         assertThat(jwt.getSubject()).isEqualTo("account-service");
         assertThat(jwt.getClaimAsString("scope")).isEqualTo("users:lookup");
+        assertThat(jwt.getClaimAsString("token_type")).isEqualTo("service");
     }
 
     @Test
