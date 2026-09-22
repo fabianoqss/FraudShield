@@ -18,15 +18,18 @@ public class AccountServiceClient {
 
     private final RestClient restClient;
 
-    public AccountServiceClient(@Value("${ACCOUNT_SERVICE_URL:http://localhost:8082}") String accountServiceUrl) {
-        this.restClient = RestClient.create(accountServiceUrl);
+    public AccountServiceClient(@Value("${ACCOUNT_SERVICE_URL:http://localhost:8082}") String accountServiceUrl,
+                                BearerTokenInterceptor bearerTokenInterceptor) {
+        this.restClient = RestClient.builder()
+                .baseUrl(accountServiceUrl)
+                .requestInterceptor(bearerTokenInterceptor)
+                .build();
     }
 
-    public void verifyOwnership(UUID accountId, UUID requestingUserId) {
+    public void verifyOwnership(UUID accountId) {
         try {
             restClient.get()
                     .uri("/accounts/{id}/balance", accountId)
-                    .header("X-User-Id", requestingUserId.toString())
                     .retrieve()
                     .toBodilessEntity();
         } catch (HttpClientErrorException.NotFound e) {
