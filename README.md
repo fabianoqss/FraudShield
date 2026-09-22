@@ -62,6 +62,16 @@ Every HTTP-facing service is an **OAuth2 Resource Server** and validates the JWT
 - **Gateway:** forwards the `Authorization: Bearer` header untouched and blocks the internal endpoints (`/auth/service-token`, `/auth/users/lookup`) from the outside.
 - **Service-to-service calls:** `transaction-service` and `ledger-service` propagate the caller's user token when checking account ownership with `account-service`.
 - **Public routes:** `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/accounts/deposit` (simulated PIX deposit), `/actuator/**`.
+- **Ownership:** users only see their own accounts, ledgers and transactions (as source or destination owner). Anything else returns `403`/`404`. The public deposit response carries only the receiver's name and the amount.
+- **Brute force:** after 5 failed logins for the same e-mail, `/auth/login` answers `429` for 15 minutes (in-memory, per `auth-service` instance).
+- **Funds integrity:** a transfer is rejected up front if it exceeds the available balance or targets an unknown account. `account-service` reserves funds with a conditional update, settles each transaction at most once (redelivered events are ignored) and never debits more than is reserved or available.
+- **Local infrastructure:** every port published by `docker-compose` is bound to `127.0.0.1`.
+
+### Known limitations
+- Kafka and Redis run without authentication. They are only reachable from the host, but a real deployment needs SASL/ACLs and a Redis password (Phase 3).
+- `POST /accounts/deposit` simulates money arriving from another bank, so anyone can credit any PIX key. That is intentional for the demo and must not exist in a real system.
+- If an approved transfer cannot be settled (e.g. the balance changed), `account-service` logs it and moves no money, but no compensation event is published, so other services still see the transaction as approved.
+- Login throttling is per instance and keyed by e-mail; a multi-instance deployment needs a shared store (Redis) and per-IP limits at the gateway.
 
 ---
 
@@ -159,7 +169,7 @@ FraudShield/
 - [x] Per-service JWT validation (Resource Server) — replaces the trusted `X-User-Id` header
 - [ ] `transaction-service` consuming outcome events to update the transaction status
 - [ ] Handling of `transaction.flagged` (balance lock release) and a manual-review endpoint
-- [ ] Ownership check on `GET /transactions/{id}`
+- [x] Ownership check on `GET /transactions/{id}`, balance checks and single settlement in the saga
 - [ ] Automated tests beyond security and unit level (Kafka flow, integration with Testcontainers)
 
 **Phase 2 — ML and supporting services**

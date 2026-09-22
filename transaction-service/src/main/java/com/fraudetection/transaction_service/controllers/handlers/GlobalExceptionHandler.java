@@ -2,7 +2,9 @@ package com.fraudetection.transaction_service.controllers.handlers;
 
 import com.fraudetection.transaction_service.dto.response.ErrorResponse;
 import com.fraudetection.transaction_service.services.exceptions.AccountServiceUnavailableException;
+import com.fraudetection.transaction_service.services.exceptions.DestinationAccountNotFoundException;
 import com.fraudetection.transaction_service.services.exceptions.DuplicateIdempotencyKeyException;
+import com.fraudetection.transaction_service.services.exceptions.InsufficientFundsException;
 import com.fraudetection.transaction_service.services.exceptions.SourceAccountAccessDeniedException;
 import com.fraudetection.transaction_service.services.exceptions.SourceAccountNotFoundException;
 import com.fraudetection.transaction_service.services.exceptions.TransactionNotFoundException;
@@ -40,6 +42,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleSourceAccountNotFound(SourceAccountNotFoundException ex, HttpServletRequest request) {
         log.warn("Transaction creation rejected: {}", ex.getMessage());
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler({InsufficientFundsException.class, DestinationAccountNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleUnprocessableTransfer(RuntimeException ex, HttpServletRequest request) {
+        log.warn("Transaction rejected on {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(SourceAccountAccessDeniedException.class)

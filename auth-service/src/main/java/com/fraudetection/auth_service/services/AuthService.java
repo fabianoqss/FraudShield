@@ -14,6 +14,7 @@ import com.fraudetection.auth_service.services.exceptions.EmailAlreadyExistsExce
 import com.fraudetection.auth_service.services.exceptions.InvalidCredentialsException;
 import com.fraudetection.auth_service.services.exceptions.InvalidCurrentPasswordException;
 import com.fraudetection.auth_service.services.exceptions.InvalidRefreshTokenException;
+import com.fraudetection.auth_service.services.exceptions.TooManyLoginAttemptsException;
 import com.fraudetection.auth_service.services.exceptions.PasswordMismatchException;
 import com.fraudetection.auth_service.services.exceptions.UserNotFoundException;
 import org.springframework.util.StringUtils;
@@ -37,6 +38,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenService refreshTokenService;
+    private final LoginAttemptService loginAttemptService;
 
     public UserResponse register(RegisterRequest registerRequest) {
         if (userRepository.existsByEmail(registerRequest.email())) {
@@ -62,14 +64,21 @@ public class AuthService {
     public AuthResponse login(LoginRequest loginRequest) {
         User user;
 
+        if (loginAttemptService.isBlocked(loginRequest.email())) {
+            throw new TooManyLoginAttemptsException();
+        }
+
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password())
             );
             user = (User) authentication.getPrincipal();
         } catch (AuthenticationException e) {
+            loginAttemptService.recordFailure(loginRequest.email());
             throw new InvalidCredentialsException();
         }
+
+        loginAttemptService.recordSuccess(loginRequest.email());
 
         String accessToken = jwtService.generateToken(user);
         String refreshToken = refreshTokenService.issue(user.getId());
