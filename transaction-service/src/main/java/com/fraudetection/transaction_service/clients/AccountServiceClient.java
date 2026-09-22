@@ -41,4 +41,19 @@ public class AccountServiceClient {
             throw new AccountServiceUnavailableException();
         }
     }
+
+    public boolean ownsAccount(UUID accountId) {
+        try {
+            restClient.get()
+                    .uri("/accounts/{id}/balance", accountId)
+                    .retrieve()
+                    .toBodilessEntity();
+            return true;
+        } catch (HttpClientErrorException.NotFound | HttpClientErrorException.Forbidden e) {
+            return false;
+        } catch (RestClientException e) {
+            log.error("Failed to check ownership of account {} with account-service", accountId, e);
+            throw new AccountServiceUnavailableException();
+        }
+    }
 }

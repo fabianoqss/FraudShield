@@ -1,6 +1,7 @@
 package com.fraudetection.account_service.controllers;
 
 import com.fraudetection.account_service.dto.response.BalanceResponse;
+import com.fraudetection.account_service.dto.response.DepositResponse;
 import com.fraudetection.account_service.security.SecurityConfig;
 import com.fraudetection.account_service.security.TokenTypeAuthoritiesConverter;
 import com.fraudetection.account_service.services.AccountService;
@@ -80,16 +81,20 @@ class AccountControllerSecurityTest {
     }
 
     @Test
-    void depositStaysPublic() throws Exception {
-        when(accountService.depositByPixKey(any())).thenReturn(
-                new BalanceResponse("Ana Souza", UUID.randomUUID(), BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.TEN));
+    void depositStaysPublicAndExposesNoPersonalData() throws Exception {
+        when(accountService.depositByPixKey(any())).thenReturn(new DepositResponse("Ana Souza", BigDecimal.TEN));
 
         mockMvc.perform(post("/accounts/deposit")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"pixKey":"ana@example.com","amount":10}
                                 """))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.receiverName").value("Ana Souza"))
+                .andExpect(jsonPath("$.email").doesNotExist())
+                .andExpect(jsonPath("$.cpf").doesNotExist())
+                .andExpect(jsonPath("$.balance").doesNotExist())
+                .andExpect(jsonPath("$.accountId").doesNotExist());
     }
 
     @Test

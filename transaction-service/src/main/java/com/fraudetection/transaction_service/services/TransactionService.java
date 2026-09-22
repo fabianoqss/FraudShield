@@ -53,6 +53,11 @@ public class TransactionService {
         Transaction transaction = transactionRepository.findById(id)
                 .orElseThrow(() -> new TransactionNotFoundException(id));
 
+        if (!accountServiceClient.ownsAccount(transaction.getSourceAccountId())
+                && !accountServiceClient.ownsAccount(transaction.getDestinationAccountId())) {
+            throw new TransactionNotFoundException(id);
+        }
+
         return toResponse(transaction);
     }
 

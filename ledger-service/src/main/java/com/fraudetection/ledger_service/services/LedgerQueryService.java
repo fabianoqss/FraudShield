@@ -14,10 +14,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class LedgerQueryService {
 
+    static final int MAX_PAGE_SIZE = 100;
+
     private final LedgerEntryRepository ledgerEntryRepository;
 
     public Page<LedgerEntry> getEntriesForAccount(UUID accountId, int page, int size) {
-        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "recordedAt"));
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.clamp(size, 1, MAX_PAGE_SIZE);
+        PageRequest pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "recordedAt"));
         return ledgerEntryRepository.findByAccountId(accountId.toString(), pageable);
     }
 }

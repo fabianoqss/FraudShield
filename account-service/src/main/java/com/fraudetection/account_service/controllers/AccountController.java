@@ -2,6 +2,7 @@ package com.fraudetection.account_service.controllers;
 
 import com.fraudetection.account_service.dto.response.AccountResponse;
 import com.fraudetection.account_service.dto.response.BalanceResponse;
+import com.fraudetection.account_service.dto.response.DepositResponse;
 import com.fraudetection.account_service.dto.request.CreateAccountRequest;
 import com.fraudetection.account_service.dto.request.PixDepositRequest;
 import com.fraudetection.account_service.services.AccountService;
@@ -39,7 +40,7 @@ public class AccountController {
     }
 
     @PostMapping("/accounts/deposit")
-    public ResponseEntity<BalanceResponse> deposit(@Valid @RequestBody PixDepositRequest request) {
+    public ResponseEntity<DepositResponse> deposit(@Valid @RequestBody PixDepositRequest request) {
         return ResponseEntity.ok(accountService.depositByPixKey(request));
     }
 }
