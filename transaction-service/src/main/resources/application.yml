@@ -4,7 +4,7 @@ spring:
       resourceserver:
         jwt:
           jwk-set-uri: ${AUTH_JWKS_URI:http://localhost:8081/.well-known/jwks.json}
-          issuer-uri: ${AUTH_ISSUER:fraudshield-auth-service}
+          issuer-uri: ${JWT_ISSUER:fraudshield-auth-service}
   application:
     name: transaction-service
   datasource:
