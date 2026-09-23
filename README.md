@@ -155,7 +155,7 @@ FraudShield/
 ├── fraud-detection-service/
 ├── ledger-service/
 ├── notification-service/
-├── ml-model-service/          # FastAPI app, training scripts, notebooks, trained model, reports
+├── ml-model-service/          # FastAPI /predict, shared features, training, trained model; research/paysim baseline
 └── infrastructure/            # docker-compose, Prometheus, Grafana, OpenTelemetry Collector, Tempo
 ```
 
@@ -178,13 +178,13 @@ FraudShield/
 **Phase 2 — ML and supporting services**
 - [x] `ledger-service` — MongoDB append-only log, 4 Kafka consumers, Redis idempotency, REST API
 - [x] `api-gateway` — routes `/auth/**`, `/accounts/**`, `/transactions/**`, `/ledger/**`
-- [ ] `ml-model-service` — baseline model trained on PaySim; the `/predict` API is not implemented yet, so `fraud-detection-service` falls back to a neutral score (every transaction ends up `FLAGGED`). The model's features also differ from the ones `fraud-detection-service` sends.
+- [x] `ml-model-service` — `POST /predict` with the same contract `fraud-detection-service` sends, RandomForest trained on synthetic data (features shared by training and serving), `/health`, Prometheus `/metrics`. The earlier PaySim baseline is kept under `research/paysim/` for reference; its features do not match the serving contract.
 - [x] `notification-service` — consumes `approved/flagged/denied`, Redis idempotency, DLT for malformed messages (notifications are logged, no e-mail/SMS yet)
 
 **Phase 3 — Operations**
 - [x] Prometheus + Grafana, OpenTelemetry tracing to Tempo
 - [ ] Kubernetes manifests (and restricting direct access to service ports)
-- [ ] ML model training pipeline
+- [ ] ML model training pipeline (retraining today is manual: `python -m ml.training.train`)
 
 ---
 

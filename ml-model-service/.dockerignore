@@ -1,0 +1,9 @@
+**
+!requirements.txt
+!app/
+!app/*.py
+!ml/
+!ml/__init__.py
+!ml/features.py
+!ml/models/
+!ml/models/fraud-v1.0.0.pkl
