@@ -2,6 +2,7 @@ package com.fraudetection.transaction_service.services;
 
 import com.fraudetection.transaction_service.clients.AccountServiceClient;
 import com.fraudetection.transaction_service.dto.request.TransactionRequest;
+import com.fraudetection.transaction_service.enums.PaymentStatus;
 import com.fraudetection.transaction_service.enums.PaymentType;
 import com.fraudetection.transaction_service.entities.Transaction;
 import com.fraudetection.transaction_service.kafka.producers.TransactionCreatedProducer;
@@ -107,6 +108,28 @@ class TransactionServiceTest {
         transactionService.createTransaction(request(BigDecimal.TEN));
 
         verify(producer).publish(any());
+    }
+
+    @Test
+    void outcomeMovesCreatedTransactionToFinalStatus() {
+        when(transactionRepository.updateStatusIf(transaction.getId(), PaymentStatus.CREATED, PaymentStatus.APPROVED))
+                .thenReturn(1);
+
+        transactionService.applyOutcome(transaction.getId(), PaymentStatus.APPROVED);
+
+        verify(transactionRepository).updateStatusIf(transaction.getId(), PaymentStatus.CREATED, PaymentStatus.APPROVED);
+        verify(transactionRepository, never()).existsById(any());
+    }
+
+    @Test
+    void redeliveredOutcomeDoesNotOverwriteFinalStatus() {
+        when(transactionRepository.updateStatusIf(transaction.getId(), PaymentStatus.CREATED, PaymentStatus.DENIED))
+                .thenReturn(0);
+        when(transactionRepository.existsById(transaction.getId())).thenReturn(true);
+
+        transactionService.applyOutcome(transaction.getId(), PaymentStatus.DENIED);
+
+        verify(transactionRepository, never()).save(any());
     }
 
     private TransactionRequest request(BigDecimal amount) {

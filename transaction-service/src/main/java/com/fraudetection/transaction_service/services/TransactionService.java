@@ -12,6 +12,7 @@ import com.fraudetection.transaction_service.services.exceptions.DuplicateIdempo
 import com.fraudetection.transaction_service.services.exceptions.InsufficientFundsException;
 import com.fraudetection.transaction_service.services.exceptions.TransactionNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TransactionService {
@@ -69,6 +71,18 @@ public class TransactionService {
         }
 
         return toResponse(transaction);
+    }
+
+    @Transactional
+    public void applyOutcome(UUID transactionId, PaymentStatus outcome) {
+        int updated = transactionRepository.updateStatusIf(transactionId, PaymentStatus.CREATED, outcome);
+        if (updated == 1) {
+            log.info("Transaction {} is now {}", transactionId, outcome);
+        } else if (transactionRepository.existsById(transactionId)) {
+            log.info("Transaction {} already has its outcome, ignoring {}", transactionId, outcome);
+        } else {
+            log.warn("Outcome {} received for unknown transaction {}", outcome, transactionId);
+        }
     }
 
     private TransactionResponse toResponse(Transaction transaction) {
