@@ -78,7 +78,7 @@ export function TransferForm({ accountId }: { accountId: string }) {
       <label htmlFor="payment-type">Tipo</label><select id="payment-type" name="type"><option value="PIX">PIX</option><option value="CREDIT">Crédito</option><option value="DEBIT">Débito</option></select>
       {fields.type && <p className="field-error">{fields.type}</p>}<button>{busy ? 'Enviando…' : 'Enviar transferência'}</button>
     </fieldset></form>}
-    {retry && <div><p>Os dados do envio foram preservados para evitar duplicação.</p><button disabled={busy} onClick={() => void send(retry)}>Repetir o mesmo envio</button><Link to="/extrato">Consultar extrato</Link></div>}
+    {retry && <div><p>Os dados do envio foram preservados para evitar duplicação.</p><button disabled={busy} onClick={() => void send(retry)}>Repetir o mesmo envio</button><button type="button" className="secondary" disabled={busy} onClick={() => { setRetry(undefined); setError(undefined); }}>Descartar e fazer nova transferência</button><Link to="/extrato">Consultar extrato</Link></div>}
     {transaction && <div><p role="status"><strong>{statusLabels[transaction.status]}</strong></p><p>Transação: <code>{transaction.id}</code></p>
       {transaction.status === 'DENIED' && <p>A transferência foi negada pela análise de fraude. O valor não foi transferido.</p>}
       {transaction.status === 'FLAGGED' && <p>A transferência aguarda revisão manual e o valor permanece reservado.</p>}

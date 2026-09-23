@@ -36,3 +36,23 @@ it('uses a new key for a new submission after a definitive rejection', async () 
   const second = request.mock.calls[1]?.[1]?.body as { idempotencyKey: string };
   expect(first.idempotencyKey).not.toBe(second.idempotencyKey);
 });
+it('discards an uncertain submission and creates a fresh key for the next transfer', async () => {
+  const request = vi.spyOn(api, 'request').mockRejectedValueOnce(new NetworkError()).mockRejectedValueOnce(new ApiError(422, 'Insufficient funds'));
+  const user = await fillAndSubmit();
+  expect(screen.getByLabelText('Valor (R$)')).toBeDisabled();
+
+  await user.click(screen.getByRole('button', { name: 'Descartar e fazer nova transferência' }));
+
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Repetir o mesmo envio' })).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Valor (R$)')).toBeEnabled();
+  expect(request).toHaveBeenCalledTimes(1);
+  await user.clear(screen.getByLabelText('Valor (R$)'));
+  await user.type(screen.getByLabelText('Valor (R$)'), '20,00');
+  await user.click(screen.getByRole('button', { name: 'Enviar transferência' }));
+
+  const first = request.mock.calls[0]?.[1]?.body as { idempotencyKey: string };
+  const second = request.mock.calls[1]?.[1]?.body as { idempotencyKey: string; amount: number };
+  expect(second.idempotencyKey).not.toBe(first.idempotencyKey);
+  expect(second.amount).toBe(20);
+});

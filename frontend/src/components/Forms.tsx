@@ -6,17 +6,16 @@ export function Field({ label, error, ...props }: InputHTMLAttributes<HTMLInputE
   const id = useId();
   return <div className="field"><label htmlFor={id}>{label}</label><input {...props} id={id} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} />{error && <span className="field-error" id={`${id}-error`}>{error}</span>}</div>;
 }
-export function ErrorNotice({ error }: { error: unknown }) {
+export function ErrorNotice({ error, notFoundMessage }: { error: unknown; notFoundMessage?: string }) {
   if (!error) return null;
   let message = error instanceof Error ? error.message : 'Não foi possível concluir a operação.';
   if (error instanceof ApiError) {
     const messages: Record<number, string> = {
       403: 'Você não tem permissão para acessar esta conta ou operação.',
-      404: 'Recurso não encontrado. Esta funcionalidade pode ainda estar indisponível no servidor.',
       429: 'Muitas tentativas de login. Aguarde 15 minutos e tente novamente.',
       503: 'Serviço temporariamente indisponível. Tente novamente mais tarde.',
     };
-    message = messages[error.status] ?? message;
+    message = error.status === 404 ? notFoundMessage ?? message : messages[error.status] ?? message;
   }
   return <p role="alert" className="error">{message}</p>;
 }

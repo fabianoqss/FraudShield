@@ -60,7 +60,7 @@ export function TransactionPage() {
     }).catch((cause: unknown) => { if (!controller.signal.aborted) setLedgerError(cause); }).finally(() => { if (!controller.signal.aborted) setBusy(false); });
     return () => controller.abort();
   }, [account, transaction, id, ledgerPage]);
-  return <section><Link to="/extrato">Voltar ao extrato</Link><h1>Detalhes da transferência</h1><button className="secondary" onClick={() => setRevision((value) => value + 1)}>Atualizar detalhes</button><ErrorNotice error={error} />
+  return <section><Link to="/extrato">Voltar ao extrato</Link><h1>Detalhes da transferência</h1><button className="secondary" onClick={() => setRevision((value) => value + 1)}>Atualizar detalhes</button><ErrorNotice error={error} notFoundMessage="Transação não encontrada." />
     {!transaction && !error && <p role="status">Carregando transação…</p>}
     {transaction && <><dl className="details"><dt>Identificador</dt><dd>{transaction.id}</dd><dt>Status</dt><dd>{statusLabels[transaction.status]}</dd><dt>Valor</dt><dd>{currency(transaction.amount)}</dd><dt>Tipo</dt><dd>{transaction.type}</dd><dt>Origem</dt><dd>{transaction.sourceAccountId}</dd><dt>Destino</dt><dd>{transaction.destinationAccountId}</dd><dt>Data</dt><dd>{dateTime(transaction.createdAt)}</dd></dl>
       <h2>Eventos de auditoria</h2><ErrorNotice error={ledgerError} />

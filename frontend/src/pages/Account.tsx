@@ -61,5 +61,5 @@ export function DepositPage() {
   return <section><h1>Depósito PIX simulado</h1><p>Informe o e-mail ou CPF do destinatário. Nenhum dinheiro real será movimentado.</p><form onSubmit={submit}><fieldset disabled={busy}>
     <Field name="pixKey" label="Chave PIX (e-mail ou CPF)" required error={fields.pixKey} />
     <Field name="amount" label="Valor (R$)" inputMode="decimal" placeholder="150,00" required error={fields.amount} />
-    <button>{busy ? 'Depositando…' : 'Depositar'}</button></fieldset><ErrorNotice error={error} /></form>{message && <p role="status">{message} <Link to="/">Ver saldo</Link></p>}</section>;
+    <button>{busy ? 'Depositando…' : 'Depositar'}</button></fieldset><ErrorNotice error={error} notFoundMessage="Chave PIX não encontrada." /></form>{message && <p role="status">{message} <Link to="/">Ver saldo</Link></p>}</section>;
 }
