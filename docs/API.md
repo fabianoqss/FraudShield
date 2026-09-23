@@ -55,7 +55,8 @@ matching form fields and `message` otherwise.
   "birthDate": "1990-05-20"
 }
 ```
-- `cpf`: 11 digits with valid check digits (send digits only).
+- `cpf`: 11 digits with valid check digits; punctuation (`529.982.247-25`) is accepted and stripped.
+- E-mail is stored trimmed and lower-cased, so login and duplicate checks ignore case.
 - `password`: at least 8 characters with an uppercase letter, a lowercase letter, a number and a special character.
 - `birthDate`: `YYYY-MM-DD`, at least 18 years old.
 
@@ -140,7 +141,7 @@ The caller's accounts, oldest first. Empty array if the user has none yet.
 ```json
 { "pixKey": "ana@example.com", "amount": 150.00 }
 ```
-`pixKey` is the receiver's e-mail or CPF (digits only). `200`:
+`pixKey` is the receiver's e-mail (any case) or CPF (with or without punctuation). `200`:
 ```json
 { "receiverName": "Ana Souza", "amount": 150.00 }
 ```
