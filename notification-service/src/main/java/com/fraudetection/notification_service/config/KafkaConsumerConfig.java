@@ -17,6 +17,7 @@ import org.springframework.kafka.support.ExponentialBackOffWithMaxRetries;
 import org.springframework.kafka.support.serializer.DeserializationException;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Configuration
@@ -44,7 +45,9 @@ public class KafkaConsumerConfig {
     @Bean
     public DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<String, Object> kafkaTemplate,
                                                   KafkaProperties kafkaProperties) {
-        Map<Class<?>, KafkaOperations<?, ?>> recovererTemplates = new HashMap<>();
+        // Ordered: the recoverer picks the first template whose key matches the value type,
+        // so byte[] must be checked before the Object catch-all.
+        Map<Class<?>, KafkaOperations<?, ?>> recovererTemplates = new LinkedHashMap<>();
         recovererTemplates.put(byte[].class, buildDltRawKafkaTemplate(kafkaProperties));
         recovererTemplates.put(Object.class, kafkaTemplate);
 
