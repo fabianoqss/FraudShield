@@ -27,7 +27,7 @@ venv/
 .ipynb_checkpoints/
 
 # ML datasets (too large for git)
-ml-model-service/data/paysim.csv
+ml-model-service/research/paysim/data/paysim.csv
 
 # IDE
 .idea/
