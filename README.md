@@ -179,7 +179,7 @@ FraudShield/
 - [x] `ledger-service` — MongoDB append-only log, 4 Kafka consumers, Redis idempotency, REST API
 - [x] `api-gateway` — routes `/auth/**`, `/accounts/**`, `/transactions/**`, `/ledger/**`
 - [ ] `ml-model-service` — baseline model trained on PaySim; the `/predict` API is not implemented yet, so `fraud-detection-service` falls back to a neutral score (every transaction ends up `FLAGGED`). The model's features also differ from the ones `fraud-detection-service` sends.
-- [ ] `notification-service` — scaffold only on `main`
+- [x] `notification-service` — consumes `approved/flagged/denied`, Redis idempotency, DLT for malformed messages (notifications are logged, no e-mail/SMS yet)
 
 **Phase 3 — Operations**
 - [x] Prometheus + Grafana, OpenTelemetry tracing to Tempo
