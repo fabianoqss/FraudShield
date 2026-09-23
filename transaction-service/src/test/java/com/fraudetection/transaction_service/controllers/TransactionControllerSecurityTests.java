@@ -2,7 +2,10 @@ package com.fraudetection.transaction_service.controllers;
 
 import com.fraudetection.transaction_service.security.SecurityConfig;
 import com.fraudetection.transaction_service.security.TokenTypeAuthoritiesConverter;
+import com.fraudetection.transaction_service.dto.response.TransactionPageResponse;
 import com.fraudetection.transaction_service.services.TransactionService;
+import com.fraudetection.transaction_service.services.exceptions.AccountAccessDeniedException;
+import com.fraudetection.transaction_service.services.exceptions.AccountNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -13,6 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.*;
@@ -75,6 +79,56 @@ class TransactionControllerSecurityTests {
                                 """.formatted(ID, UUID.randomUUID())))
                 .andExpect(status().isCreated());
         verify(transactionService).createTransaction(any());
+    }
+
+    @Test
+    void listsTransactionsOfAccount() throws Exception {
+        when(transactionService.listTransactions(ID, 1, 5))
+                .thenReturn(new TransactionPageResponse(List.of(), 1, 5, 0, 0));
+
+        mockMvc.perform(get("/transactions").param("accountId", ID.toString()).param("page", "1").param("size", "5")
+                        .with(userJwt(UUID.randomUUID())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.transactions").isArray())
+                .andExpect(jsonPath("$.page").value(1));
+    }
+
+    @Test
+    void listUsesDefaultPaging() throws Exception {
+        mockMvc.perform(get("/transactions").param("accountId", ID.toString()).with(userJwt(UUID.randomUUID())))
+                .andExpect(status().isOk());
+        verify(transactionService).listTransactions(ID, 0, 20);
+    }
+
+    @Test
+    void listWithoutAccountIdIsBadRequest() throws Exception {
+        mockMvc.perform(get("/transactions").with(userJwt(UUID.randomUUID())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Missing required parameter: accountId"));
+        verifyNoInteractions(transactionService);
+    }
+
+    @Test
+    void listWithMalformedAccountIdIsBadRequest() throws Exception {
+        mockMvc.perform(get("/transactions").param("accountId", "not-a-uuid").with(userJwt(UUID.randomUUID())))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(transactionService);
+    }
+
+    @Test
+    void listOfAnotherUsersAccountIsForbidden() throws Exception {
+        when(transactionService.listTransactions(ID, 0, 20)).thenThrow(new AccountAccessDeniedException(ID));
+
+        mockMvc.perform(get("/transactions").param("accountId", ID.toString()).with(userJwt(UUID.randomUUID())))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void listOfUnknownAccountIsNotFound() throws Exception {
+        when(transactionService.listTransactions(ID, 0, 20)).thenThrow(new AccountNotFoundException(ID));
+
+        mockMvc.perform(get("/transactions").param("accountId", ID.toString()).with(userJwt(UUID.randomUUID())))
+                .andExpect(status().isNotFound());
     }
 
     @Test

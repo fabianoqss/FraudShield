@@ -7,20 +7,30 @@ import com.fraudetection.transaction_service.enums.PaymentType;
 import com.fraudetection.transaction_service.entities.Transaction;
 import com.fraudetection.transaction_service.kafka.producers.TransactionCreatedProducer;
 import com.fraudetection.transaction_service.repositories.TransactionRepository;
+import com.fraudetection.transaction_service.services.exceptions.AccountAccessDeniedException;
 import com.fraudetection.transaction_service.services.exceptions.AccountServiceUnavailableException;
 import com.fraudetection.transaction_service.services.exceptions.DestinationAccountNotFoundException;
 import com.fraudetection.transaction_service.services.exceptions.InsufficientFundsException;
 import com.fraudetection.transaction_service.services.exceptions.TransactionNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -111,6 +121,32 @@ class TransactionServiceTest {
     }
 
     @Test
+    void listReturnsTransactionsWhereAccountIsSourceOrDestinationNewestFirst() {
+        Pageable pageable = listAndCapturePageable(0, 20);
+
+        assertThat(pageable.getPageNumber()).isZero();
+        assertThat(pageable.getPageSize()).isEqualTo(20);
+        assertThat(pageable.getSort()).isEqualTo(Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
+    @Test
+    void listClampsPageSizeAndNegativePage() {
+        assertThat(listAndCapturePageable(-3, 500).getPageSize()).isEqualTo(100);
+        assertThat(listAndCapturePageable(-3, 0).getPageNumber()).isZero();
+        assertThat(listAndCapturePageable(0, 0).getPageSize()).isEqualTo(1);
+    }
+
+    @Test
+    void listOfAccountNotOwnedDoesNotQueryTransactions() {
+        doThrow(new AccountAccessDeniedException(sourceAccountId))
+                .when(accountServiceClient).requireOwnedAccount(sourceAccountId);
+
+        assertThatThrownBy(() -> transactionService.listTransactions(sourceAccountId, 0, 20))
+                .isInstanceOf(AccountAccessDeniedException.class);
+        verify(transactionRepository, never()).findBySourceAccountIdOrDestinationAccountId(any(), any(), any());
+    }
+
+    @Test
     void outcomeMovesCreatedTransactionToFinalStatus() {
         when(transactionRepository.updateStatusIf(transaction.getId(), PaymentStatus.CREATED, PaymentStatus.APPROVED))
                 .thenReturn(1);
@@ -130,6 +166,19 @@ class TransactionServiceTest {
         transactionService.applyOutcome(transaction.getId(), PaymentStatus.DENIED);
 
         verify(transactionRepository, never()).save(any());
+    }
+
+    private Pageable listAndCapturePageable(int page, int size) {
+        when(transactionRepository.findBySourceAccountIdOrDestinationAccountId(eq(sourceAccountId), eq(sourceAccountId), any()))
+                .thenAnswer(invocation -> new PageImpl<>(List.of(transaction), invocation.getArgument(2), 1));
+
+        var response = transactionService.listTransactions(sourceAccountId, page, size);
+        assertThat(response.transactions()).extracting("id").containsExactly(transaction.getId());
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(transactionRepository, atLeastOnce())
+                .findBySourceAccountIdOrDestinationAccountId(eq(sourceAccountId), eq(sourceAccountId), captor.capture());
+        return captor.getValue();
     }
 
     private TransactionRequest request(BigDecimal amount) {

@@ -1,5 +1,7 @@
 package com.fraudetection.transaction_service.clients;
 
+import com.fraudetection.transaction_service.services.exceptions.AccountAccessDeniedException;
+import com.fraudetection.transaction_service.services.exceptions.AccountNotFoundException;
 import com.fraudetection.transaction_service.services.exceptions.AccountServiceUnavailableException;
 import com.fraudetection.transaction_service.services.exceptions.SourceAccountAccessDeniedException;
 import com.fraudetection.transaction_service.services.exceptions.SourceAccountNotFoundException;
@@ -70,6 +72,22 @@ public class AccountServiceClient {
             return true;
         } catch (HttpClientErrorException.NotFound | HttpClientErrorException.Forbidden e) {
             return false;
+        } catch (RestClientException e) {
+            log.error("Failed to check ownership of account {} with account-service", accountId, e);
+            throw new AccountServiceUnavailableException();
+        }
+    }
+
+    public void requireOwnedAccount(UUID accountId) {
+        try {
+            restClient.get()
+                    .uri("/accounts/{id}/balance", accountId)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new AccountNotFoundException(accountId);
+        } catch (HttpClientErrorException.Forbidden e) {
+            throw new AccountAccessDeniedException(accountId);
         } catch (RestClientException e) {
             log.error("Failed to check ownership of account {} with account-service", accountId, e);
             throw new AccountServiceUnavailableException();

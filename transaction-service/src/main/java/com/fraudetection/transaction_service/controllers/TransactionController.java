@@ -1,6 +1,7 @@
 package com.fraudetection.transaction_service.controllers;
 
 import com.fraudetection.transaction_service.dto.request.TransactionRequest;
+import com.fraudetection.transaction_service.dto.response.TransactionPageResponse;
 import com.fraudetection.transaction_service.dto.response.TransactionResponse;
 import com.fraudetection.transaction_service.services.TransactionService;
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -27,6 +29,13 @@ public class TransactionController {
     public ResponseEntity<TransactionResponse> createRequest(@Valid @RequestBody TransactionRequest request) {
         TransactionResponse response = transactionService.createTransaction(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<TransactionPageResponse> listRequest(@RequestParam UUID accountId,
+                                                               @RequestParam(defaultValue = "0") int page,
+                                                               @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(transactionService.listTransactions(accountId, page, size));
     }
 
     @GetMapping("/{id}")
