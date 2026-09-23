@@ -70,11 +70,13 @@ Every HTTP-facing service is an **OAuth2 Resource Server** and validates the JWT
 - **Local infrastructure:** every port published by `docker-compose` is bound to `127.0.0.1`.
 
 ### Known risks
-Four risks remain open. They are described in detail, with scenarios and fixes, in [`SECURITY.md`](./SECURITY.md#3-known-risks):
+Six risks remain open. They are described in detail, with scenarios and fixes, in [`SECURITY.md`](./SECURITY.md#3-known-risks):
 - Kafka and Redis run without authentication (mitigated: bound to localhost; fix in Phase 3).
 - The public PIX deposit can credit any key. This is intentional, to simulate incoming transfers.
 - A failed settlement publishes no compensation event (data consistency, not exploitable).
 - Login throttling is in memory and per instance.
+- Access tokens stay valid until they expire (15 min), even after logout or a password change.
+- Tokens have no audience, so a token accepted by one service is accepted by all of them.
 
 ---
 

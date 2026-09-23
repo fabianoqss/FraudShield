@@ -133,6 +133,31 @@ When `account-service` refuses to settle an approval (insufficient balance, miss
 
 **Fix.** Store the counters in Redis, which is shared across replicas and survives restarts, and add a per-IP rate limit at `api-gateway`.
 
+### 3.5 Access tokens cannot be revoked — design (stateless JWT)
+
+**What it is.** Access tokens are self-contained JWTs. Services check signature, expiry and issuer locally and never ask `auth-service` whether a token is still valid. Logout and password change revoke the user's **refresh** tokens, but an access token that was already issued stays valid until it expires (`JWT_EXPIRATION_MS`, 15 minutes by default).
+
+**Risk.** A stolen access token keeps working for up to 15 minutes after the user logs out or changes the password. The same is true for a user who should lose access immediately.
+
+**Current mitigation.** The access token lifetime is short, and the attacker cannot renew it, because the refresh tokens are revoked and a reused refresh token revokes every session.
+
+**Fix, if immediate revocation is needed.**
+- A denylist in Redis, keyed by the token id (`jti`) or by user and "not valid before" time, checked by each service. This adds one Redis lookup per request.
+- Or token introspection (RFC 7662) against `auth-service` for sensitive routes only, trading latency for immediate revocation.
+- Shortening the lifetime further (for example, 5 minutes) reduces the window without adding state.
+
+### 3.6 Tokens are valid in every service (no audience) — design
+
+**What it is.** Tokens carry no `aud` (audience) claim, and no service checks one. A user token issued by `auth-service` is accepted by `account-service`, `transaction-service`, `ledger-service` and `api-gateway` alike. On top of that, `transaction-service` and `ledger-service` forward the caller's own token to `account-service` to check account ownership (`BearerTokenInterceptor`).
+
+**Risk.** If one service is compromised, it can replay the user tokens it receives against every other service, acting as those users until the tokens expire. A token leaked from one service's logs or traffic is equally valid everywhere. Service tokens are less exposed: they are scoped (`users:lookup`) and last 5 minutes.
+
+**Current mitigation.** Short token lifetime (see 3.5). Every service still enforces ownership, so a replayed token only reaches that user's own data.
+
+**Fix.**
+- `auth-service` sets an `aud` claim, and each service rejects tokens that were not issued for it (in Spring Security, an audience validator added to the `JwtDecoder`).
+- For service-to-service calls, replace token forwarding with **token exchange** (RFC 8693): `transaction-service` trades the user token for a short-lived token whose audience is only `account-service`, still carrying the user's identity.
+
 ### Summary
 
 | # | Risk | Type | Exploitable today | When to address |
@@ -141,6 +166,8 @@ When `account-service` refuses to settle an approval (insufficient balance, miss
 | 3.2 | Public deposit | Design (intentional) | Yes, by design of the demo | Before any non-demo use |
 | 3.3 | No compensation event | Design | No (data consistency only) | Next saga iteration |
 | 3.4 | In-memory login throttling | Infrastructure / scale | Partially (spraying, multi-replica) | When running more than one replica |
+| 3.5 | Access tokens cannot be revoked | Design (stateless JWT) | Only with a stolen token, for up to 15 min | If immediate logout/revocation is required |
+| 3.6 | No audience: tokens valid in every service | Design | Only from a compromised service or leaked token | Before running untrusted or third-party services |
 
 ---
 
