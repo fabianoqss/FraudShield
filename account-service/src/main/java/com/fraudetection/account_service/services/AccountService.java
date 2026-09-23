@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -38,6 +39,12 @@ public class AccountService {
         Account saved = accountRepository.save(account);
 
         return toAccountResponse(saved);
+    }
+
+    public List<AccountResponse> listAccounts(UUID requestingUserId) {
+        return accountRepository.findByOwnerIdOrderByCreatedAtAsc(requestingUserId).stream()
+                .map(this::toAccountResponse)
+                .toList();
     }
 
     public BalanceResponse getBalance(UUID accountId, UUID requestingUserId) {
