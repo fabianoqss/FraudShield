@@ -1,19 +1,27 @@
 # FraudShield — frontend
 
-Base em React, Vite e TypeScript strict, com React Router, CSS simples e testes em Vitest + Testing Library (jsdom).
+Interface em português para pagamentos e detecção de fraude simulados. React, Vite, TypeScript strict, React Router e CSS simples. As chamadas usam `fetch` por meio do cliente em `src/api/client.ts`.
 
 ## Instalar e executar
 
 Use Node.js 22.12 ou superior e npm. Dentro de `frontend/`:
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-Acesse http://127.0.0.1:5173. A instalação inicial gera `package-lock.json`; ele deve ser versionado após uma instalação bem-sucedida. Nas instalações seguintes, use `npm ci`.
+Acesse http://127.0.0.1:5173. O `package-lock.json` registra as versões das dependências.
 
-## Comandos
+## Backend necessário
+
+Mantenha o backend em execução com infraestrutura (PostgreSQL, MongoDB, Kafka e Redis), auth-service, account-service, transaction-service, fraud-detection-service, ml-model-service, ledger-service e api-gateway na porta 8080. O notification-service completa o fluxo de notificações do backend. A inicialização e as variáveis de ambiente estão documentadas no README do backend.
+
+O proxy do Vite encaminha `/auth`, `/accounts`, `/transactions` e `/ledger` para `http://localhost:8080`. Não há mock server e nenhuma chamada da aplicação usa diretamente portas dos serviços.
+
+O contrato é `../docs/API.md`. Endpoints ainda não disponíveis mostram erro na tela com possibilidade de nova consulta; a interface não fabrica dados para substituí-los.
+
+## Comandos de validação
 
 ```bash
 npm run build
@@ -22,18 +30,41 @@ npm run typecheck
 npm run test:watch
 ```
 
-O build gera `dist/`. O teste inicial verifica a navegação de uma URL desconhecida de volta à página inicial.
+O build gera `dist/`. Para publicar esse diretório, configure no servidor o encaminhamento das quatro famílias de rotas da API ao gateway e o fallback para `index.html` nas rotas da interface. O proxy do Vite vale apenas durante o desenvolvimento.
 
-## Integração prevista
+## Funcionalidades
 
-O proxy de desenvolvimento encaminha `/auth`, `/accounts`, `/transactions` e `/ledger` para `http://localhost:8080`. As chamadas futuras devem usar caminhos relativos e seguir `../docs/API.md`.
+- Cadastro com erros por campo; login e aviso de bloqueio por 15 minutos no HTTP 429.
+- Rotas protegidas e restauração da sessão ao recarregar a página.
+- Listagem/seleção de contas, criação quando não há contas, saldo total, bloqueado e disponível, cópia do identificador.
+- Depósito PIX simulado por e-mail ou CPF.
+- Transferências PIX, crédito ou débito, com acompanhamento a cada 1,5 segundo por até 30 segundos.
+- Extrato paginado com origem/destino e status, detalhes da transação e eventos de auditoria com pontuação de fraude.
+- Troca de senha seguida de logout e logout explícito.
 
-Para os fluxos integrados, mantenha a infraestrutura e os serviços do backend em execução: bancos, Kafka, Redis, autenticação, contas, transações, detecção de fraude, modelo ML, ledger e gateway na porta 8080. Consulte o README do backend para inicialização. A página inicial atual pode ser aberta sem o backend.
+## Autenticação e reenvios
 
-O proxy é exclusivo do servidor de desenvolvimento. Uma publicação de `dist/` precisará de roteamento equivalente para a API e fallback para `index.html` nas rotas da interface.
+O access token fica somente em memória; o refresh token fica em `sessionStorage`. Nome e identificador do usuário vêm dos claims `fullName` e `sub` do JWT. Decodificar o JWT serve à interface; a autorização é feita pelo backend.
 
-## Estado atual
+O cliente compartilha uma única promessa de refresh entre chamadas concorrentes, incluindo restauração de sessão. Após HTTP 401, repete a chamada autenticada no máximo uma vez. Um 401 atrasado usa o access token já renovado. Falha no refresh limpa a sessão e leva ao login; o refresh antigo nunca é reenviado automaticamente.
 
-Esta etapa prepara dependências, configurações e a página inicial. Autenticação, telas de conta, depósito, transferência, extrato e seus testes serão implementados nas próximas etapas. Não há mock server.
+Um HTTP 401 na troca de senha também pode significar senha atual incorreta. Após uma renovação e uma repetição, esse erro é mostrado no formulário sem encerrar uma sessão válida. O logout aguarda um refresh em andamento para revogar o token mais recente.
 
-A instalação no ambiente de criação foi impedida por erro de DNS (`EAI_AGAIN` ao acessar registry.npmjs.org). As versões declaradas ainda precisam ser resolvidas pelo npm; build, testes e verificação de tipos dependem dessa instalação.
+Cada novo envio de transferência recebe um UUID. Em falha de rede ou resposta ilegível, os dados ficam bloqueados no formulário e a ação “Repetir o mesmo envio” reutiliza exatamente o payload e a chave originais. Sair da página descarta esse envio pendente; consulte o extrato antes de iniciar outra transferência. O `deviceId` é criado uma vez em `localStorage`; `ipAddress` é enviado como `null`.
+
+## Decisões e limites do contrato
+
+- Repetir uma chave já aceita retorna 409, sem recuperar o ID original. A interface orienta consultar o extrato e não declara que a primeira tentativa falhou.
+- O fim dos 30 segundos de polling significa análise pendente, não rejeição. Navegar para outra tela cancela o acompanhamento.
+- `FLAGGED` aparece como “EM REVISÃO” e mantém o valor reservado. Não há revisão manual implementada no backend.
+- O ledger não oferece filtro por transação no servidor. Cada página consultada é filtrada localmente por `transactionId`; se houver outras páginas, a interface oferece “Buscar nas próximas páginas”. Uma busca parcial não é apresentada como ausência definitiva de eventos.
+- Depósitos não constam no extrato de transferências nem no ledger.
+- Saldos, status e eventos são atualizados de forma assíncrona. As telas permitem atualizar os dados.
+- Datas sem offset de fuso no contrato são exibidas conforme a interpretação local do navegador; o contrato não define um fuso para esses valores.
+- Mensagens estruturadas do backend (`message` e `fieldErrors`) são preservadas; elas podem estar em inglês. Rótulos, orientações e mensagens próprias da interface estão em português.
+
+## Testes
+
+Vitest + Testing Library em jsdom cobrem renovação single-flight, 401 atrasado, limite de repetição, falha de refresh, restauração, logout concorrente, JWT com acentos, respostas 204 e erros não JSON, cadastro/login, troca de senha, transferência com 422/409, idempotência após falha de rede, polling, cancelamento e paginação do ledger.
+
+Os testes substituem o transporte HTTP ou métodos do cliente dentro do processo de testes. Não iniciam servidor simulado. A validação automatizada não substitui um teste integrado com todos os serviços reais em execução.
