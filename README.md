@@ -140,7 +140,7 @@ docker-compose --env-file ../.env --profile services up -d --build
 cd auth-service
 ./mvnw test
 ```
-The `@SpringBootTest` context-load tests need the service's database running; the security, client and unit tests do not.
+The `@SpringBootTest` context-load tests need the service's database running; the security, client and unit tests do not. `ledger-service` and `notification-service` start their own MongoDB/Kafka/Redis with Testcontainers, so they only need Docker.
 
 ---
 
@@ -173,7 +173,7 @@ FraudShield/
 - [ ] `transaction-service` consuming outcome events to update the transaction status
 - [ ] Handling of `transaction.flagged` (balance lock release) and a manual-review endpoint
 - [x] Ownership check on `GET /transactions/{id}`, balance checks and single settlement in the saga
-- [ ] Automated tests beyond security and unit level (Kafka flow, integration with Testcontainers)
+- [ ] Automated tests beyond security and unit level — Testcontainers integration tests exist for the `ledger-service` and `notification-service` consumers; the other services and the end-to-end saga are not covered yet
 
 **Phase 2 — ML and supporting services**
 - [x] `ledger-service` — MongoDB append-only log, 4 Kafka consumers, Redis idempotency, REST API
