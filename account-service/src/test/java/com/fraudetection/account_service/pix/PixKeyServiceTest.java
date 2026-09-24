@@ -115,6 +115,19 @@ class PixKeyServiceTest {
     }
 
     @Test
+    void accountDeactivatedBeforeTheLockIsRejected() {
+        Account lockedAccount = new Account();
+        lockedAccount.setId(account.getId());
+        lockedAccount.setOwnerId(userId);
+        lockedAccount.setStatus("BLOCKED");
+        when(accountRepository.findByIdForUpdate(account.getId())).thenReturn(Optional.of(lockedAccount));
+
+        assertThatThrownBy(() -> service.register(account.getId(), userId, PixKeyType.RANDOM))
+                .isInstanceOf(InactiveAccountException.class);
+        verify(pixKeyRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
     void sixthKeyIsRejected() {
         when(pixKeyRepository.countByAccount_Id(account.getId())).thenReturn(5L);
 

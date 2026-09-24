@@ -57,6 +57,12 @@ class InternalPixLookupControllerTest {
     }
 
     @Test
+    void malformedLookupIdIsBadRequest() throws Exception {
+        mockMvc.perform(get("/internal/pix-keys/lookups/not-a-uuid").with(userJwt()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void requiresToken() throws Exception {
         mockMvc.perform(get("/internal/pix-keys/lookups/{id}", UUID.randomUUID()))
                 .andExpect(status().isUnauthorized());

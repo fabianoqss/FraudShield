@@ -33,8 +33,7 @@ public class AuthServiceClient {
     }
 
     public UserLookupResponse lookupById(UUID userId) {
-        return lookup("id", userId.toString(),
-                () -> new IllegalStateException("User " + userId + " not found in auth-service"));
+        return lookup("id", userId.toString(), () -> new AuthUserNotFoundException(userId));
     }
 
     private UserLookupResponse lookup(String paramName, String paramValue, Supplier<RuntimeException> notFound) {

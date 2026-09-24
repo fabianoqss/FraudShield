@@ -1,6 +1,7 @@
 package com.fraudetection.account_service.pix;
 
 import com.fraudetection.account_service.clients.AuthServiceClient;
+import com.fraudetection.account_service.clients.AuthUserNotFoundException;
 import com.fraudetection.account_service.dto.response.UserLookupResponse;
 import com.fraudetection.account_service.pix.dto.PixKeyLookupResponse;
 import com.fraudetection.account_service.pix.exceptions.PixKeyNotFoundException;
@@ -62,7 +63,14 @@ public class PixLookupService {
             return new PixKeyNotFoundException();
         });
 
-        UserLookupResponse owner = authServiceClient.lookupById(key.getOwnerId());
+        UserLookupResponse owner;
+        try {
+            owner = authServiceClient.lookupById(key.getOwnerId());
+        } catch (AuthUserNotFoundException e) {
+            countLookup("not_found");
+            log.warn("PIX key lookup by user {} for {}: owner no longer exists in auth-service", requesterId, masked);
+            throw new PixKeyNotFoundException();
+        }
         UUID lookupId = UUID.randomUUID();
         lookupStore.save(lookupId, new PixLookup(key.getAccount().getId(), requesterId), properties.lookupTtl());
 

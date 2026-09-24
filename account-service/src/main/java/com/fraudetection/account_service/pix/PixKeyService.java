@@ -82,6 +82,9 @@ public class PixKeyService {
     private PixKey insert(UUID accountId, UUID ownerId, PixKeyType type, String value) {
         Account account = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
+        if (!ACTIVE.equals(account.getStatus())) {
+            throw new InactiveAccountException(accountId);
+        }
         if (pixKeyRepository.countByAccount_Id(accountId) >= MAX_KEYS_PER_ACCOUNT) {
             throw new PixKeyLimitReachedException();
         }

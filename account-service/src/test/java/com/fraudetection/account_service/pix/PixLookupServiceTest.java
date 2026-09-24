@@ -1,6 +1,7 @@
 package com.fraudetection.account_service.pix;
 
 import com.fraudetection.account_service.clients.AuthServiceClient;
+import com.fraudetection.account_service.clients.AuthUserNotFoundException;
 import com.fraudetection.account_service.dto.response.UserLookupResponse;
 import com.fraudetection.account_service.entities.Account;
 import com.fraudetection.account_service.pix.dto.PixKeyLookupResponse;
@@ -87,6 +88,16 @@ class PixLookupServiceTest {
     @Test
     void unregisteredKeyIsNotFoundAndNothingIsStored() {
         assertThatThrownBy(() -> service.lookup(requesterId, "bia@example.com"))
+                .isInstanceOf(PixKeyNotFoundException.class);
+        verify(lookupStore, never()).save(any(), any(), any());
+        assertThat(meterRegistry.counter("pix.key.lookups", "result", "not_found").count()).isEqualTo(1.0);
+    }
+
+    @Test
+    void keyWhoseOwnerNoLongerExistsIsNotFound() {
+        when(authServiceClient.lookupById(recipientId)).thenThrow(new AuthUserNotFoundException(recipientId));
+
+        assertThatThrownBy(() -> service.lookup(requesterId, "ana@example.com"))
                 .isInstanceOf(PixKeyNotFoundException.class);
         verify(lookupStore, never()).save(any(), any(), any());
         assertThat(meterRegistry.counter("pix.key.lookups", "result", "not_found").count()).isEqualTo(1.0);
