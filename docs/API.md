@@ -217,7 +217,7 @@ Errors: `400` invalid key format, `404` key not registered, `429` more than 20 l
 {
   "id": "uuid",
   "sourceAccountId": "uuid",
-  "lookupId": "uuid",
+  "destinationAccountId": "uuid",
   "amount": 100.00,
   "type": "PIX",
   "status": "CREATED",
