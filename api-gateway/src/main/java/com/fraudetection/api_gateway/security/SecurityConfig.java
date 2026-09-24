@@ -29,7 +29,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/service-token", "/auth/users/lookup").denyAll()
+                        .requestMatchers("/auth/service-token", "/auth/users/lookup", "/internal/**").denyAll()
                         .requestMatchers("/auth/login", "/auth/register", "/auth/refresh", "/auth/logout", "/accounts/deposit", "/error", "/actuator/**").permitAll()
                         .anyRequest().hasRole(TokenTypeAuthoritiesConverter.USER_ROLE)
                 )

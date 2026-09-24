@@ -122,6 +122,21 @@ class GatewaySecurityTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void internalServiceRoutesAreNotExposed() throws Exception {
+        when(jwtDecoder.decode("user-token")).thenReturn(Jwt.withTokenValue("user-token")
+                .header("alg", "RS256")
+                .subject(UUID.randomUUID().toString())
+                .claim("token_type", "user")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .build());
+
+        mockMvc.perform(get("/internal/pix-keys/lookups/{id}", UUID.randomUUID())
+                        .header("Authorization", "Bearer user-token"))
+                .andExpect(status().isForbidden());
+    }
+
     private static HttpServer startDownstream() {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
