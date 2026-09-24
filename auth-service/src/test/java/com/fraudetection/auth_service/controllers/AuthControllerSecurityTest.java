@@ -125,13 +125,35 @@ class AuthControllerSecurityTest {
     @Test
     void lookupWithServiceTokenIsAllowed() throws Exception {
         UUID userId = UUID.randomUUID();
-        when(authService.lookup(eq("ana@example.com"), any())).thenReturn(new UserLookupResponse(userId, "Ana Souza", "ana@example.com", "52998224725"));
+        when(authService.lookup(any(), eq("ana@example.com"), any())).thenReturn(new UserLookupResponse(userId, "Ana Souza", "ana@example.com", "52998224725"));
         String serviceToken = jwtService.generateServiceToken("account-service", List.of("users:lookup"));
 
         mockMvc.perform(get("/auth/users/lookup")
                         .param("email", "ana@example.com")
                         .header("Authorization", "Bearer " + serviceToken))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void lookupByIdWithServiceTokenIsAllowed() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(authService.lookup(eq(userId), any(), any()))
+                .thenReturn(new UserLookupResponse(userId, "Ana Souza", "ana@example.com", "52998224725"));
+        String serviceToken = jwtService.generateServiceToken("account-service", List.of("users:lookup"));
+
+        mockMvc.perform(get("/auth/users/lookup")
+                        .param("id", userId.toString())
+                        .header("Authorization", "Bearer " + serviceToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(userId.toString()));
+    }
+
+    @Test
+    void lookupByIdWithUserTokenIsForbidden() throws Exception {
+        mockMvc.perform(get("/auth/users/lookup")
+                        .param("id", UUID.randomUUID().toString())
+                        .header("Authorization", "Bearer " + userToken()))
+                .andExpect(status().isForbidden());
     }
 
     @Test

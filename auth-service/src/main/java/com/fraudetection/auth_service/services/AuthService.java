@@ -108,10 +108,12 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
-    public UserLookupResponse lookup(String email, String cpf) {
+    public UserLookupResponse lookup(UUID id, String email, String cpf) {
         User user;
 
-        if (StringUtils.hasText(email)) {
+        if (id != null) {
+            user = userRepository.findById(id).orElseThrow(UserNotFoundException::new);
+        } else if (StringUtils.hasText(email)) {
             user = userRepository.findByEmail(Identifiers.email(email)).orElseThrow(UserNotFoundException::new);
         } else if (StringUtils.hasText(cpf)) {
             user = userRepository.findByCpf(Identifiers.cpf(cpf)).orElseThrow(UserNotFoundException::new);

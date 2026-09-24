@@ -14,7 +14,4 @@ public record PixDepositRequest(
         @Positive(message = "Amount must be positive")
         BigDecimal amount
 ) {
-    public boolean isEmailKey() {
-        return pixKey.contains("@");
-    }
 }

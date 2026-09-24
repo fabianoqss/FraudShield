@@ -3,9 +3,11 @@ package com.fraudetection.transaction_service.clients;
 import com.fraudetection.transaction_service.services.exceptions.AccountAccessDeniedException;
 import com.fraudetection.transaction_service.services.exceptions.AccountNotFoundException;
 import com.fraudetection.transaction_service.services.exceptions.AccountServiceUnavailableException;
+import com.fraudetection.transaction_service.services.exceptions.InvalidPixLookupException;
 import com.fraudetection.transaction_service.services.exceptions.SourceAccountAccessDeniedException;
 import com.fraudetection.transaction_service.services.exceptions.SourceAccountNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -21,12 +23,17 @@ public class AccountServiceClient {
 
     private final RestClient restClient;
 
+    @Autowired
     public AccountServiceClient(@Value("${ACCOUNT_SERVICE_URL:http://localhost:8082}") String accountServiceUrl,
                                 BearerTokenInterceptor bearerTokenInterceptor) {
-        this.restClient = RestClient.builder()
+        this(RestClient.builder()
                 .baseUrl(accountServiceUrl)
                 .requestInterceptor(bearerTokenInterceptor)
-                .build();
+                .build());
+    }
+
+    AccountServiceClient(RestClient restClient) {
+        this.restClient = restClient;
     }
 
     public BigDecimal getOwnedAvailableBalance(UUID accountId) {
@@ -46,19 +53,17 @@ public class AccountServiceClient {
         }
     }
 
-    public boolean accountExists(UUID accountId) {
+    public UUID resolvePixLookup(UUID lookupId) {
         try {
-            restClient.get()
-                    .uri("/accounts/{id}/balance", accountId)
+            PixLookupResolution resolution = restClient.get()
+                    .uri("/internal/pix-keys/lookups/{id}", lookupId)
                     .retrieve()
-                    .toBodilessEntity();
-            return true;
-        } catch (HttpClientErrorException.Forbidden e) {
-            return true;
+                    .body(PixLookupResolution.class);
+            return resolution.destinationAccountId();
         } catch (HttpClientErrorException.NotFound e) {
-            return false;
+            throw new InvalidPixLookupException();
         } catch (RestClientException e) {
-            log.error("Failed to check existence of account {} with account-service", accountId, e);
+            log.error("Failed to resolve PIX lookup {} with account-service", lookupId, e);
             throw new AccountServiceUnavailableException();
         }
     }
@@ -95,5 +100,8 @@ public class AccountServiceClient {
     }
 
     private record BalanceResponse(BigDecimal availableBalance) {
+    }
+
+    private record PixLookupResolution(UUID destinationAccountId) {
     }
 }

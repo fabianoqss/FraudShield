@@ -2,7 +2,6 @@ package com.fraudetection.account_service.clients;
 
 import com.fraudetection.account_service.dto.response.UserLookupResponse;
 import com.fraudetection.account_service.services.exceptions.AuthServiceUnavailableException;
-import com.fraudetection.account_service.services.exceptions.PixKeyNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +10,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+
+import java.util.UUID;
+import java.util.function.Supplier;
 
 @Slf4j
 @Component
@@ -30,15 +32,11 @@ public class AuthServiceClient {
         this.serviceTokenProvider = serviceTokenProvider;
     }
 
-    public UserLookupResponse lookupByEmail(String email) {
-        return lookup("email", email);
+    public UserLookupResponse lookupById(UUID userId) {
+        return lookup("id", userId.toString(), () -> new AuthUserNotFoundException(userId));
     }
 
-    public UserLookupResponse lookupByCpf(String cpf) {
-        return lookup("cpf", cpf);
-    }
-
-    private UserLookupResponse lookup(String paramName, String paramValue) {
+    private UserLookupResponse lookup(String paramName, String paramValue, Supplier<RuntimeException> notFound) {
         try {
             String token = serviceTokenProvider.getToken();
             try {
@@ -49,9 +47,9 @@ public class AuthServiceClient {
                 return callLookup(paramName, paramValue, serviceTokenProvider.getToken());
             }
         } catch (HttpClientErrorException.NotFound e) {
-            throw new PixKeyNotFoundException();
+            throw notFound.get();
         } catch (RestClientException e) {
-            log.error("Failed to resolve PIX key with auth-service", e);
+            log.error("Failed to look up user with auth-service", e);
             throw new AuthServiceUnavailableException();
         }
     }

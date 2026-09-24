@@ -71,7 +71,7 @@ class TransactionControllerSecurityTests {
                         .content("""
                                 {
                                   "sourceAccountId": "%s",
-                                  "destinationAccountId": "%s",
+                                  "lookupId": "%s",
                                   "amount": 10,
                                   "type": "PIX",
                                   "idempotencyKey": "security-test"

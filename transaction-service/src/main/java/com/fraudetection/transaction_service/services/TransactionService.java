@@ -8,9 +8,9 @@ import com.fraudetection.transaction_service.entities.Transaction;
 import com.fraudetection.transaction_service.enums.PaymentStatus;
 import com.fraudetection.transaction_service.kafka.producers.TransactionCreatedProducer;
 import com.fraudetection.transaction_service.repositories.TransactionRepository;
-import com.fraudetection.transaction_service.services.exceptions.DestinationAccountNotFoundException;
 import com.fraudetection.transaction_service.services.exceptions.DuplicateIdempotencyKeyException;
 import com.fraudetection.transaction_service.services.exceptions.InsufficientFundsException;
+import com.fraudetection.transaction_service.services.exceptions.SameAccountTransferException;
 import com.fraudetection.transaction_service.services.exceptions.TransactionNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,13 +47,14 @@ public class TransactionService {
             throw new InsufficientFundsException(request.sourceAccountId());
         }
 
-        if (!accountServiceClient.accountExists(request.destinationAccountId())) {
-            throw new DestinationAccountNotFoundException(request.destinationAccountId());
+        UUID destinationAccountId = accountServiceClient.resolvePixLookup(request.lookupId());
+        if (destinationAccountId.equals(request.sourceAccountId())) {
+            throw new SameAccountTransferException();
         }
 
         Transaction transaction = new Transaction();
         transaction.setSourceAccountId(request.sourceAccountId());
-        transaction.setDestinationAccountId(request.destinationAccountId());
+        transaction.setDestinationAccountId(destinationAccountId);
         transaction.setAmount(request.amount());
         transaction.setType(request.type());
         transaction.setStatus(PaymentStatus.CREATED);

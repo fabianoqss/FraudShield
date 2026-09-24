@@ -12,7 +12,7 @@ public record TransactionRequest(
 
         @NotNull UUID sourceAccountId,
 
-        @NotNull UUID destinationAccountId,
+        @NotNull UUID lookupId,
 
         @NotNull @Positive BigDecimal amount,
 
