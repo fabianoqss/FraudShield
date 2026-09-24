@@ -2,16 +2,19 @@ package com.fraudetection.account_service.pix;
 
 import com.fraudetection.account_service.AbstractIntegrationTest;
 import com.fraudetection.account_service.clients.AuthServiceClient;
+import com.fraudetection.account_service.dto.request.PixDepositRequest;
 import com.fraudetection.account_service.dto.response.UserLookupResponse;
 import com.fraudetection.account_service.entities.Account;
 import com.fraudetection.account_service.pix.exceptions.PixKeyAlreadyRegisteredException;
 import com.fraudetection.account_service.pix.exceptions.PixKeyLimitReachedException;
 import com.fraudetection.account_service.repositories.AccountRepository;
+import com.fraudetection.account_service.services.AccountService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -45,6 +48,9 @@ class PixKeyIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+    @Autowired
+    AccountService accountService;
 
     @AfterEach
     void cleanUp() {
@@ -130,6 +136,19 @@ class PixKeyIntegrationTest extends AbstractIntegrationTest {
         pixKeyService.delete(recipient.getId(), key.id(), recipient.getOwnerId());
 
         assertThat(pixLookupService.resolve(lookupId, requester)).isEqualTo(recipient.getId());
+    }
+
+    @Test
+    void depositByFormattedCpfCreditsTheRegisteredAccount() {
+        Account recipient = newAccount(UUID.randomUUID());
+        when(authServiceClient.lookupById(recipient.getOwnerId())).thenReturn(
+                new UserLookupResponse(recipient.getOwnerId(), "Ana Souza", "ana@example.com", "52998224725"));
+        pixKeyService.register(recipient.getId(), recipient.getOwnerId(), PixKeyType.CPF);
+
+        accountService.depositByPixKey(new PixDepositRequest("529.982.247-25", new BigDecimal("150.00")));
+
+        assertThat(accountRepository.findById(recipient.getId()).orElseThrow().getBalance())
+                .isEqualByComparingTo("150.00");
     }
 
     Account newAccount(UUID ownerId) {

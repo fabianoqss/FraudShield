@@ -2,7 +2,6 @@ package com.fraudetection.account_service.clients;
 
 import com.fraudetection.account_service.dto.response.UserLookupResponse;
 import com.fraudetection.account_service.services.exceptions.AuthServiceUnavailableException;
-import com.fraudetection.account_service.pix.exceptions.PixKeyNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -29,7 +28,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 class AuthServiceClientTest {
 
-    private static final String LOOKUP_URL = "http://auth/auth/users/lookup?email=ana@example.com";
+    private static final UUID USER_ID = UUID.fromString("7d3f0c1a-2b4e-4c6d-8e9f-0a1b2c3d4e5f");
+    private static final String LOOKUP_URL = "http://auth/auth/users/lookup?id=" + USER_ID;
 
     private MockRestServiceServer server;
     private AuthServiceClient client;
@@ -47,45 +47,35 @@ class AuthServiceClientTest {
 
     @Test
     void lookupSendsServiceTokenAndReusesItAcrossCalls() {
-        UUID userId = UUID.randomUUID();
         expectServiceToken("token-1");
-        expectLookup("token-1", userId);
-        expectLookup("token-1", userId);
+        expectLookup("token-1", USER_ID);
+        expectLookup("token-1", USER_ID);
 
-        UserLookupResponse first = client.lookupByEmail("ana@example.com");
-        client.lookupByEmail("ana@example.com");
+        UserLookupResponse first = client.lookupById(USER_ID);
+        client.lookupById(USER_ID);
 
-        assertThat(first.userId()).isEqualTo(userId);
+        assertThat(first.userId()).isEqualTo(USER_ID);
         server.verify();
     }
 
     @Test
     void lookupFetchesNewTokenOnceWhenCachedTokenIsRejected() {
-        UUID userId = UUID.randomUUID();
         expectServiceToken("stale");
         server.expect(once(), requestTo(LOOKUP_URL))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer stale"))
                 .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
         expectServiceToken("fresh");
-        expectLookup("fresh", userId);
+        expectLookup("fresh", USER_ID);
 
-        assertThat(client.lookupByEmail("ana@example.com").userId()).isEqualTo(userId);
+        assertThat(client.lookupById(USER_ID).userId()).isEqualTo(USER_ID);
         server.verify();
-    }
-
-    @Test
-    void unknownPixKeyMapsToNotFound() {
-        expectServiceToken("token-1");
-        server.expect(once(), requestTo(LOOKUP_URL)).andRespond(withStatus(HttpStatus.NOT_FOUND));
-
-        assertThatThrownBy(() -> client.lookupByEmail("ana@example.com")).isInstanceOf(PixKeyNotFoundException.class);
     }
 
     @Test
     void rejectedClientCredentialsMapToUnavailable() {
         server.expect(once(), requestTo("http://auth/auth/service-token")).andRespond(withStatus(HttpStatus.UNAUTHORIZED));
 
-        assertThatThrownBy(() -> client.lookupByEmail("ana@example.com"))
+        assertThatThrownBy(() -> client.lookupById(USER_ID))
                 .isInstanceOf(AuthServiceUnavailableException.class);
     }
 
