@@ -15,6 +15,8 @@ import com.fraudetection.transaction_service.services.exceptions.TransactionNotF
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -56,6 +59,7 @@ class TransactionServiceTest {
         transaction.setDestinationAccountId(destinationAccountId);
         transaction.setAmount(BigDecimal.TEN);
         when(transactionRepository.findById(transaction.getId())).thenReturn(Optional.of(transaction));
+        when(transactionRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -117,7 +121,20 @@ class TransactionServiceTest {
 
         transactionService.createTransaction(request(BigDecimal.TEN));
 
-        verify(producer).publish(any());
+        InOrder inOrder = inOrder(transactionRepository, producer);
+        inOrder.verify(transactionRepository).save(any());
+        inOrder.verify(producer).publish(any());
+    }
+
+    @Test
+    void createDoesNotPublishWhenSaveFails() {
+        when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(new BigDecimal("10"));
+        when(accountServiceClient.accountExists(destinationAccountId)).thenReturn(true);
+        when(transactionRepository.save(any())).thenThrow(new DataIntegrityViolationException("duplicate key"));
+
+        assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        verify(producer, never()).publish(any());
     }
 
     @Test

@@ -18,6 +18,7 @@ import com.fraudetection.auth_service.services.exceptions.TooManyLoginAttemptsEx
 import com.fraudetection.auth_service.services.exceptions.PasswordMismatchException;
 import com.fraudetection.auth_service.services.exceptions.UserNotFoundException;
 import com.fraudetection.auth_service.validation.Identifiers;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -106,6 +107,7 @@ public class AuthService {
         refreshTokenService.revoke(refreshToken);
     }
 
+    @Transactional(readOnly = true)
     public UserLookupResponse lookup(String email, String cpf) {
         User user;
 

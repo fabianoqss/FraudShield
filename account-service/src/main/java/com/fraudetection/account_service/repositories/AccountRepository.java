@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,24 +18,29 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     List<Account> findByOwnerIdOrderByCreatedAtAsc(UUID ownerId);
 
+    @Transactional
     @Modifying
     @Query("update Account a set a.lockedBalance = a.lockedBalance + :amount "
             + "where a.id = :accountId and a.balance - a.lockedBalance >= :amount")
     int reserveFunds(@Param("accountId") UUID accountId, @Param("amount") BigDecimal amount);
 
+    @Transactional
     @Modifying
     @Query("update Account a set a.balance = a.balance - :amount "
             + "where a.id = :accountId and a.balance - a.lockedBalance >= :amount")
     int debitIfAvailable(@Param("accountId") UUID accountId, @Param("amount") BigDecimal amount);
 
+    @Transactional
     @Modifying
     @Query("update Account a set a.balance = a.balance - :amount, a.lockedBalance = a.lockedBalance - :lockAmount where a.id = :accountId")
     void debitAndReleaseLock(@Param("accountId") UUID accountId, @Param("amount") BigDecimal amount, @Param("lockAmount") BigDecimal lockAmount);
 
+    @Transactional
     @Modifying
     @Query("update Account a set a.balance = a.balance + :amount where a.id = :accountId")
     void creditBalance(@Param("accountId") UUID accountId, @Param("amount") BigDecimal amount);
 
+    @Transactional
     @Modifying
     @Query("update Account a set a.lockedBalance = a.lockedBalance - :amount where a.id = :accountId")
     void decreaseLockedBalance(@Param("accountId") UUID accountId, @Param("amount") BigDecimal amount);
