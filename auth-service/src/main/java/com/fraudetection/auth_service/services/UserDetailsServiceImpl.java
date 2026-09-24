@@ -1,6 +1,7 @@
 package com.fraudetection.auth_service.services;
 
 import com.fraudetection.auth_service.repositories.UserRepository;
+import com.fraudetection.auth_service.validation.Identifiers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -15,7 +16,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userRepository.findByEmail(email)
+        return userRepository.findByEmail(Identifiers.email(email))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
     }
 }

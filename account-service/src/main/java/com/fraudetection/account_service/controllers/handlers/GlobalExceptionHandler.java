@@ -4,7 +4,6 @@ import com.fraudetection.account_service.dto.response.ErrorResponse;
 import com.fraudetection.account_service.services.exceptions.AccountAccessDeniedException;
 import com.fraudetection.account_service.services.exceptions.AccountNotFoundException;
 import com.fraudetection.account_service.services.exceptions.AuthServiceUnavailableException;
-import com.fraudetection.account_service.services.exceptions.PixKeyNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -15,6 +14,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -33,12 +33,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccountAccessDenied(AccountAccessDeniedException ex, HttpServletRequest request) {
         log.warn("Access denied on {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(PixKeyNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handlePixKeyNotFound(PixKeyNotFoundException ex, HttpServletRequest request) {
-        log.warn("Deposit rejected: {}", ex.getMessage());
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(AuthServiceUnavailableException.class)
@@ -69,6 +63,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMalformedRequest(HttpMessageNotReadableException ex, HttpServletRequest request) {
         log.warn("Malformed request body on {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, "Malformed request body", request);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        log.warn("Invalid parameter on {}: {}", request.getRequestURI(), ex.getName());
+        return buildResponse(HttpStatus.BAD_REQUEST, "Invalid value for parameter '" + ex.getName() + "'", request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

@@ -46,7 +46,7 @@ transaction-service → [transaction.created] → fraud-detection-service
  account-service  ledger-service  notification-svc  ledger-service  notification-svc  ledger-service  notification-svc
 ```
 
-> `transaction-service` does not consume the outcome events yet, so a transaction's status stays at its initial value (see [Status](#status)).
+> `transaction-service` also consumes the three outcome events and moves the transaction from `CREATED` to `APPROVED`, `FLAGGED` or `DENIED`.
 
 ---
 
@@ -169,10 +169,10 @@ FraudShield/
 - [x] Project structure and `docker-compose` (databases, Kafka, Redis, services)
 - [x] `auth-service` — register, login, refresh-token rotation, logout, password change, RS256 + JWKS, service tokens
 - [x] `account-service` — accounts, balance locks, simulated PIX deposit, consumers for `transaction.created/approved/denied`
-- [x] `transaction-service` — creation with idempotency key and ownership check, lookup, publishes `transaction.created`
+- [x] `transaction-service` — creation with idempotency key and ownership check, lookup, paginated history per account, publishes `transaction.created`
 - [x] `fraud-detection-service` — consumes `transaction.created`, builds features, scores, persists and publishes `approved/flagged/denied`
 - [x] Per-service JWT validation (Resource Server) — replaces the trusted `X-User-Id` header
-- [ ] `transaction-service` consuming outcome events to update the transaction status
+- [x] `transaction-service` consuming outcome events to update the transaction status
 - [ ] Handling of `transaction.flagged` (balance lock release) and a manual-review endpoint
 - [x] Ownership check on `GET /transactions/{id}`, balance checks and single settlement in the saga
 - [ ] Automated tests beyond security and unit level — Testcontainers integration tests exist for the `ledger-service` and `notification-service` consumers; the other services and the end-to-end saga are not covered yet

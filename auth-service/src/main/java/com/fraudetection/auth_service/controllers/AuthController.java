@@ -72,9 +72,10 @@ public class AuthController {
     }
 
     @GetMapping(value = "/users/lookup")
-    public ResponseEntity<UserLookupResponse> lookup(@RequestParam(required = false) String email,
+    public ResponseEntity<UserLookupResponse> lookup(@RequestParam(required = false) UUID id,
+                                                        @RequestParam(required = false) String email,
                                                         @RequestParam(required = false) String cpf) {
-        return ResponseEntity.ok(authService.lookup(email, cpf));
+        return ResponseEntity.ok(authService.lookup(id, email, cpf));
     }
 
 }

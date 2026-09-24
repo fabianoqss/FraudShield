@@ -1,22 +1,21 @@
 package com.fraudetection.account_service.services;
 
-import com.fraudetection.account_service.clients.AuthServiceClient;
 import com.fraudetection.account_service.dto.response.AccountResponse;
 import com.fraudetection.account_service.dto.response.BalanceResponse;
 import com.fraudetection.account_service.dto.response.DepositResponse;
-import com.fraudetection.account_service.dto.response.UserLookupResponse;
 import com.fraudetection.account_service.dto.request.CreateAccountRequest;
 import com.fraudetection.account_service.dto.request.PixDepositRequest;
 import com.fraudetection.account_service.entities.Account;
+import com.fraudetection.account_service.pix.PixKeyService;
 import com.fraudetection.account_service.repositories.AccountRepository;
 import com.fraudetection.account_service.services.exceptions.AccountAccessDeniedException;
 import com.fraudetection.account_service.services.exceptions.AccountNotFoundException;
-import com.fraudetection.account_service.services.exceptions.PixKeyNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -24,7 +23,7 @@ import java.util.UUID;
 public class AccountService {
 
     private final AccountRepository accountRepository;
-    private final AuthServiceClient authServiceClient;
+    private final PixKeyService pixKeyService;
 
     public AccountResponse createAccount(CreateAccountRequest request, UUID requestingUserId) {
         if (!request.ownerId().equals(requestingUserId)) {
@@ -40,6 +39,14 @@ public class AccountService {
         return toAccountResponse(saved);
     }
 
+    @Transactional(readOnly = true)
+    public List<AccountResponse> listAccounts(UUID requestingUserId) {
+        return accountRepository.findByOwnerIdOrderByCreatedAtAsc(requestingUserId).stream()
+                .map(this::toAccountResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public BalanceResponse getBalance(UUID accountId, UUID requestingUserId) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
@@ -57,14 +64,12 @@ public class AccountService {
         );
     }
 
-    @Transactional
+    // Not @Transactional: the key lookup and the credit are independent single statements;
+    // creditBalance is one atomic UPDATE in its own transaction.
     public DepositResponse depositByPixKey(PixDepositRequest request) {
-        UserLookupResponse user = request.isEmailKey()
-                ? authServiceClient.lookupByEmail(request.pixKey())
-                : authServiceClient.lookupByCpf(request.pixKey());
-
-        Account account = accountRepository.findFirstByOwnerId(user.userId())
-                .orElseThrow(PixKeyNotFoundException::new);
+        UUID accountId = pixKeyService.resolveAccountId(request.pixKey());
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
 
         accountRepository.creditBalance(account.getId(), request.amount());
 

@@ -1,10 +1,13 @@
 package com.fraudetection.transaction_service.controllers.handlers;
 
 import com.fraudetection.transaction_service.dto.response.ErrorResponse;
+import com.fraudetection.transaction_service.services.exceptions.AccountAccessDeniedException;
+import com.fraudetection.transaction_service.services.exceptions.AccountNotFoundException;
 import com.fraudetection.transaction_service.services.exceptions.AccountServiceUnavailableException;
-import com.fraudetection.transaction_service.services.exceptions.DestinationAccountNotFoundException;
 import com.fraudetection.transaction_service.services.exceptions.DuplicateIdempotencyKeyException;
 import com.fraudetection.transaction_service.services.exceptions.InsufficientFundsException;
+import com.fraudetection.transaction_service.services.exceptions.InvalidPixLookupException;
+import com.fraudetection.transaction_service.services.exceptions.SameAccountTransferException;
 import com.fraudetection.transaction_service.services.exceptions.SourceAccountAccessDeniedException;
 import com.fraudetection.transaction_service.services.exceptions.SourceAccountNotFoundException;
 import com.fraudetection.transaction_service.services.exceptions.TransactionNotFoundException;
@@ -16,8 +19,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -44,7 +49,7 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
-    @ExceptionHandler({InsufficientFundsException.class, DestinationAccountNotFoundException.class})
+    @ExceptionHandler({InsufficientFundsException.class, InvalidPixLookupException.class, SameAccountTransferException.class})
     public ResponseEntity<ErrorResponse> handleUnprocessableTransfer(RuntimeException ex, HttpServletRequest request) {
         log.warn("Transaction rejected on {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage(), request);
@@ -53,6 +58,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SourceAccountAccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleSourceAccountAccessDenied(SourceAccountAccessDeniedException ex, HttpServletRequest request) {
         log.warn("Transaction creation rejected: {}", ex.getMessage());
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AccountNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAccountNotFound(AccountNotFoundException ex, HttpServletRequest request) {
+        log.warn("Transaction listing rejected: {}", ex.getMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AccountAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccountAccessDenied(AccountAccessDeniedException ex, HttpServletRequest request) {
+        log.warn("Transaction listing rejected: {}", ex.getMessage());
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
@@ -78,6 +95,18 @@ public class GlobalExceptionHandler {
                 fieldErrors
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParameter(MissingServletRequestParameterException ex, HttpServletRequest request) {
+        log.warn("Missing parameter on {}: {}", request.getRequestURI(), ex.getParameterName());
+        return buildResponse(HttpStatus.BAD_REQUEST, "Missing required parameter: " + ex.getParameterName(), request);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        log.warn("Invalid parameter on {}: {}", request.getRequestURI(), ex.getName());
+        return buildResponse(HttpStatus.BAD_REQUEST, "Invalid value for parameter: " + ex.getName(), request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
