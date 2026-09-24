@@ -2,6 +2,7 @@ package com.fraudetection.account_service.pix;
 
 import com.fraudetection.account_service.pix.exceptions.PixLookupRateLimitedException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -39,11 +40,12 @@ public class PixLookupRateLimiter {
         long windowSeconds = WINDOW.toSeconds();
         String key = KEY_PREFIX + userId + ":" + epochSecond / windowSeconds;
 
+        redisTemplate.opsForValue().setIfAbsent(key, "0", WINDOW);
         Long count = redisTemplate.opsForValue().increment(key);
-        if (count != null && count == 1) {
-            redisTemplate.expire(key, WINDOW);
+        if (count == null) {
+            throw new RedisConnectionFailureException("Redis returned no lookup counter");
         }
-        if (count != null && count > maxPerWindow) {
+        if (count > maxPerWindow) {
             throw new PixLookupRateLimitedException(windowSeconds - epochSecond % windowSeconds);
         }
     }
