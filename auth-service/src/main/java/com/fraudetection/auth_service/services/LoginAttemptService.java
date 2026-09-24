@@ -1,5 +1,6 @@
 package com.fraudetection.auth_service.services;
 
+import com.fraudetection.auth_service.validation.Identifiers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -7,7 +8,6 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -57,7 +57,7 @@ public class LoginAttemptService {
     }
 
     private String key(String email) {
-        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+        return email == null ? "" : Identifiers.email(email);
     }
 
     private record Attempts(int failures, Instant windowStart) {

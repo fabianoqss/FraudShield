@@ -17,6 +17,7 @@ import com.fraudetection.auth_service.services.exceptions.InvalidRefreshTokenExc
 import com.fraudetection.auth_service.services.exceptions.TooManyLoginAttemptsException;
 import com.fraudetection.auth_service.services.exceptions.PasswordMismatchException;
 import com.fraudetection.auth_service.services.exceptions.UserNotFoundException;
+import com.fraudetection.auth_service.validation.Identifiers;
 import org.springframework.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -41,18 +42,21 @@ public class AuthService {
     private final LoginAttemptService loginAttemptService;
 
     public UserResponse register(RegisterRequest registerRequest) {
-        if (userRepository.existsByEmail(registerRequest.email())) {
-            throw new EmailAlreadyExistsException(registerRequest.email());
+        String email = Identifiers.email(registerRequest.email());
+        String cpf = Identifiers.cpf(registerRequest.cpf());
+
+        if (userRepository.existsByEmail(email)) {
+            throw new EmailAlreadyExistsException(email);
         }
 
-        if (userRepository.existsByCpf(registerRequest.cpf())) {
-            throw new DuplicateCpfException(registerRequest.cpf());
+        if (userRepository.existsByCpf(cpf)) {
+            throw new DuplicateCpfException(cpf);
         }
 
         User user = new User();
         user.setFullName(registerRequest.fullName());
-        user.setEmail(registerRequest.email());
-        user.setCpf(registerRequest.cpf());
+        user.setEmail(email);
+        user.setCpf(cpf);
         user.setPasswordHash(passwordEncoder.encode(registerRequest.password()));
         user.setBirthDate(registerRequest.birthDate());
 
@@ -63,22 +67,23 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest loginRequest) {
         User user;
+        String email = Identifiers.email(loginRequest.email());
 
-        if (loginAttemptService.isBlocked(loginRequest.email())) {
+        if (loginAttemptService.isBlocked(email)) {
             throw new TooManyLoginAttemptsException();
         }
 
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password())
+                    new UsernamePasswordAuthenticationToken(email, loginRequest.password())
             );
             user = (User) authentication.getPrincipal();
         } catch (AuthenticationException e) {
-            loginAttemptService.recordFailure(loginRequest.email());
+            loginAttemptService.recordFailure(email);
             throw new InvalidCredentialsException();
         }
 
-        loginAttemptService.recordSuccess(loginRequest.email());
+        loginAttemptService.recordSuccess(email);
 
         String accessToken = jwtService.generateToken(user);
         String refreshToken = refreshTokenService.issue(user.getId());
@@ -105,9 +110,9 @@ public class AuthService {
         User user;
 
         if (StringUtils.hasText(email)) {
-            user = userRepository.findByEmail(email).orElseThrow(UserNotFoundException::new);
+            user = userRepository.findByEmail(Identifiers.email(email)).orElseThrow(UserNotFoundException::new);
         } else if (StringUtils.hasText(cpf)) {
-            user = userRepository.findByCpf(cpf).orElseThrow(UserNotFoundException::new);
+            user = userRepository.findByCpf(Identifiers.cpf(cpf)).orElseThrow(UserNotFoundException::new);
         } else {
             throw new UserNotFoundException();
         }
