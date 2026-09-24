@@ -9,8 +9,9 @@ import com.fraudetection.transaction_service.kafka.producers.TransactionCreatedP
 import com.fraudetection.transaction_service.repositories.TransactionRepository;
 import com.fraudetection.transaction_service.services.exceptions.AccountAccessDeniedException;
 import com.fraudetection.transaction_service.services.exceptions.AccountServiceUnavailableException;
-import com.fraudetection.transaction_service.services.exceptions.DestinationAccountNotFoundException;
 import com.fraudetection.transaction_service.services.exceptions.InsufficientFundsException;
+import com.fraudetection.transaction_service.services.exceptions.InvalidPixLookupException;
+import com.fraudetection.transaction_service.services.exceptions.SameAccountTransferException;
 import com.fraudetection.transaction_service.services.exceptions.TransactionNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,7 @@ class TransactionServiceTest {
 
     private final UUID sourceAccountId = UUID.randomUUID();
     private final UUID destinationAccountId = UUID.randomUUID();
+    private final UUID lookupId = UUID.randomUUID();
     private Transaction transaction;
 
     @BeforeEach
@@ -105,19 +107,48 @@ class TransactionServiceTest {
     }
 
     @Test
-    void createRejectsUnknownDestination() {
+    void createRejectsExpiredLookup() {
         when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(new BigDecimal("100"));
-        when(accountServiceClient.accountExists(destinationAccountId)).thenReturn(false);
+        when(accountServiceClient.resolvePixLookup(lookupId)).thenThrow(new InvalidPixLookupException());
 
         assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN)))
-                .isInstanceOf(DestinationAccountNotFoundException.class);
+                .isInstanceOf(InvalidPixLookupException.class);
+        verify(transactionRepository, never()).save(any());
         verify(producer, never()).publish(any());
+    }
+
+    @Test
+    void createRejectsTransferToTheSourceAccount() {
+        when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(new BigDecimal("100"));
+        when(accountServiceClient.resolvePixLookup(lookupId)).thenReturn(sourceAccountId);
+
+        assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN)))
+                .isInstanceOf(SameAccountTransferException.class);
+        verify(transactionRepository, never()).save(any());
+    }
+
+    @Test
+    void createStoresTheResolvedDestination() {
+        when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(new BigDecimal("100"));
+        when(accountServiceClient.resolvePixLookup(lookupId)).thenReturn(destinationAccountId);
+
+        assertThat(transactionService.createTransaction(request(BigDecimal.TEN)).destinationAccountId())
+                .isEqualTo(destinationAccountId);
+    }
+
+    @Test
+    void createDoesNotResolveTheLookupWhenFundsAreInsufficient() {
+        when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(BigDecimal.ONE);
+
+        assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN)))
+                .isInstanceOf(InsufficientFundsException.class);
+        verify(accountServiceClient, never()).resolvePixLookup(any());
     }
 
     @Test
     void createPublishesWhenFundsAndDestinationAreValid() {
         when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(new BigDecimal("10"));
-        when(accountServiceClient.accountExists(destinationAccountId)).thenReturn(true);
+        when(accountServiceClient.resolvePixLookup(lookupId)).thenReturn(destinationAccountId);
 
         transactionService.createTransaction(request(BigDecimal.TEN));
 
@@ -129,7 +160,7 @@ class TransactionServiceTest {
     @Test
     void createDoesNotPublishWhenSaveFails() {
         when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(new BigDecimal("10"));
-        when(accountServiceClient.accountExists(destinationAccountId)).thenReturn(true);
+        when(accountServiceClient.resolvePixLookup(lookupId)).thenReturn(destinationAccountId);
         when(transactionRepository.save(any())).thenThrow(new DataIntegrityViolationException("duplicate key"));
 
         assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN)))
@@ -199,7 +230,7 @@ class TransactionServiceTest {
     }
 
     private TransactionRequest request(BigDecimal amount) {
-        return new TransactionRequest(sourceAccountId, destinationAccountId, amount, PaymentType.PIX,
+        return new TransactionRequest(sourceAccountId, lookupId, amount, PaymentType.PIX,
                 "device", "8.8.8.8", UUID.randomUUID().toString());
     }
 }
