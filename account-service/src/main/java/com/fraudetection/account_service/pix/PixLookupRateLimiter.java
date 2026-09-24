@@ -2,6 +2,7 @@ package com.fraudetection.account_service.pix;
 
 import com.fraudetection.account_service.pix.exceptions.PixLookupRateLimitedException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -40,8 +41,13 @@ public class PixLookupRateLimiter {
         long windowSeconds = WINDOW.toSeconds();
         String key = KEY_PREFIX + userId + ":" + epochSecond / windowSeconds;
 
-        redisTemplate.opsForValue().setIfAbsent(key, "0", WINDOW);
-        Long count = redisTemplate.opsForValue().increment(key);
+        Long count;
+        try {
+            redisTemplate.opsForValue().setIfAbsent(key, "0", WINDOW);
+            count = redisTemplate.opsForValue().increment(key);
+        } catch (DataAccessException e) {
+            throw new RedisConnectionFailureException("Redis unavailable for PIX key lookups", e);
+        }
         if (count == null) {
             throw new RedisConnectionFailureException("Redis returned no lookup counter");
         }

@@ -1,6 +1,8 @@
 package com.fraudetection.account_service.pix;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -18,11 +20,20 @@ public class PixLookupStore {
     private final StringRedisTemplate redisTemplate;
 
     public void save(UUID lookupId, PixLookup lookup, Duration ttl) {
-        redisTemplate.opsForValue().set(KEY_PREFIX + lookupId, lookup.requesterId() + ":" + lookup.accountId(), ttl);
+        try {
+            redisTemplate.opsForValue().set(KEY_PREFIX + lookupId, lookup.requesterId() + ":" + lookup.accountId(), ttl);
+        } catch (DataAccessException e) {
+            throw new RedisConnectionFailureException("Redis unavailable for PIX key lookups", e);
+        }
     }
 
     public Optional<PixLookup> find(UUID lookupId) {
-        String value = redisTemplate.opsForValue().get(KEY_PREFIX + lookupId);
+        String value;
+        try {
+            value = redisTemplate.opsForValue().get(KEY_PREFIX + lookupId);
+        } catch (DataAccessException e) {
+            throw new RedisConnectionFailureException("Redis unavailable for PIX key lookups", e);
+        }
         if (value == null) {
             return Optional.empty();
         }

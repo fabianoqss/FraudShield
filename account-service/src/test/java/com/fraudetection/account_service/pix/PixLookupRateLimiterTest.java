@@ -78,4 +78,12 @@ class PixLookupRateLimiterTest {
         assertThatThrownBy(() -> limiter.acquire(userId))
                 .isInstanceOf(RedisConnectionFailureException.class);
     }
+
+    @Test
+    void redisCommandFailureFailsClosed() {
+        when(values.increment(key)).thenThrow(new org.springframework.dao.QueryTimeoutException("timeout"));
+
+        assertThatThrownBy(() -> limiter.acquire(userId))
+                .isInstanceOf(RedisConnectionFailureException.class);
+    }
 }
