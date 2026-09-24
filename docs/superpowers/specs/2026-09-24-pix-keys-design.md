@@ -171,6 +171,9 @@ All use the existing `ErrorResponse`; backend messages stay in English as today 
 - auth-service unavailable → CPF/e-mail registration and lookup return 503 (existing handling).
 - Known risk, out of scope: auth-service does not verify e-mail ownership at sign-up, so an e-mail key proves
   the account holder registered that e-mail, not that they control the mailbox.
+- Known risk: the simulated `POST /accounts/deposit` is public and returns the receiver's name for a registered
+  key without the lookup rate limit, so it can confirm whether a key is registered. Follow-up: rate-limit it
+  (per IP) or stop returning the name.
 
 ## Observability
 

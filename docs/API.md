@@ -144,6 +144,8 @@ The caller's accounts, oldest first. Empty array if the user has none yet.
 { "receiverName": "Ana Souza", "amount": 150.00 }
 ```
 Errors: `400` validation or invalid key format, `404` key not registered.
+Note: this simulated endpoint is public and not rate limited; it confirms whether a key is registered. It is
+meant for local testing, not production.
 
 ## PIX keys
 
