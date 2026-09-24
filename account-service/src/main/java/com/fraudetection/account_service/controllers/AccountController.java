@@ -15,24 +15,26 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
 
 @RestController
+@RequestMapping("/accounts")
 @RequiredArgsConstructor
 public class AccountController {
 
     private final AccountService accountService;
 
-    @GetMapping("/accounts")
+    @GetMapping
     public ResponseEntity<List<AccountResponse>> list(Authentication authentication) {
         UUID requestingUserId = UUID.fromString(authentication.getName());
         return ResponseEntity.ok(accountService.listAccounts(requestingUserId));
     }
 
-    @PostMapping("/accounts")
+    @PostMapping
     public ResponseEntity<AccountResponse> create(@Valid @RequestBody CreateAccountRequest request,
                                                     Authentication authentication) {
         UUID requestingUserId = UUID.fromString(authentication.getName());
@@ -40,13 +42,13 @@ public class AccountController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/accounts/{id}/balance")
+    @GetMapping("/{id}/balance")
     public ResponseEntity<BalanceResponse> getBalance(@PathVariable UUID id, Authentication authentication) {
         UUID requestingUserId = UUID.fromString(authentication.getName());
         return ResponseEntity.ok(accountService.getBalance(id, requestingUserId));
     }
 
-    @PostMapping("/accounts/deposit")
+    @PostMapping("/deposit")
     public ResponseEntity<DepositResponse> deposit(@Valid @RequestBody PixDepositRequest request) {
         return ResponseEntity.ok(accountService.depositByPixKey(request));
     }
