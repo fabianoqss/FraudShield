@@ -41,12 +41,14 @@ public class AccountService {
         return toAccountResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     public List<AccountResponse> listAccounts(UUID requestingUserId) {
         return accountRepository.findByOwnerIdOrderByCreatedAtAsc(requestingUserId).stream()
                 .map(this::toAccountResponse)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public BalanceResponse getBalance(UUID accountId, UUID requestingUserId) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
@@ -64,7 +66,8 @@ public class AccountService {
         );
     }
 
-    @Transactional
+    // Not @Transactional on purpose: the auth-service lookup must not hold a DB connection.
+    // creditBalance is a single atomic UPDATE that runs in its own transaction.
     public DepositResponse depositByPixKey(PixDepositRequest request) {
         UserLookupResponse user = request.isEmailKey()
                 ? authServiceClient.lookupByEmail(request.pixKey())
