@@ -89,6 +89,42 @@ class AuthServiceClientTest {
                 .isInstanceOf(AuthServiceUnavailableException.class);
     }
 
+    @Test
+    void lookupByIdSendsTheIdAsQueryParameter() {
+        UUID userId = UUID.randomUUID();
+        expectServiceToken("token-1");
+        server.expect(once(), requestTo("http://auth/auth/users/lookup?id=" + userId))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer token-1"))
+                .andRespond(withSuccess("""
+                        {"userId":"%s","fullName":"Ana Souza","email":"ana@example.com","cpf":"52998224725"}
+                        """.formatted(userId), MediaType.APPLICATION_JSON));
+
+        UserLookupResponse user = client.lookupById(userId);
+
+        assertThat(user.cpf()).isEqualTo("52998224725");
+        server.verify();
+    }
+
+    @Test
+    void lookupByIdOfUnknownUserIsAnInvariantViolation() {
+        UUID userId = UUID.randomUUID();
+        expectServiceToken("token-1");
+        server.expect(once(), requestTo("http://auth/auth/users/lookup?id=" + userId))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        assertThatThrownBy(() -> client.lookupById(userId)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void lookupByIdMapsServerErrorsToUnavailable() {
+        UUID userId = UUID.randomUUID();
+        expectServiceToken("token-1");
+        server.expect(once(), requestTo("http://auth/auth/users/lookup?id=" + userId))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        assertThatThrownBy(() -> client.lookupById(userId)).isInstanceOf(AuthServiceUnavailableException.class);
+    }
+
     private void expectServiceToken(String token) {
         server.expect(once(), requestTo("http://auth/auth/service-token"))
                 .andExpect(method(HttpMethod.POST))

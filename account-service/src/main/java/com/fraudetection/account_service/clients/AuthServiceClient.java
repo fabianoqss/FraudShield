@@ -12,6 +12,9 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.util.UUID;
+import java.util.function.Supplier;
+
 @Slf4j
 @Component
 public class AuthServiceClient {
@@ -31,14 +34,19 @@ public class AuthServiceClient {
     }
 
     public UserLookupResponse lookupByEmail(String email) {
-        return lookup("email", email);
+        return lookup("email", email, PixKeyNotFoundException::new);
     }
 
     public UserLookupResponse lookupByCpf(String cpf) {
-        return lookup("cpf", cpf);
+        return lookup("cpf", cpf, PixKeyNotFoundException::new);
     }
 
-    private UserLookupResponse lookup(String paramName, String paramValue) {
+    public UserLookupResponse lookupById(UUID userId) {
+        return lookup("id", userId.toString(),
+                () -> new IllegalStateException("User " + userId + " not found in auth-service"));
+    }
+
+    private UserLookupResponse lookup(String paramName, String paramValue, Supplier<RuntimeException> notFound) {
         try {
             String token = serviceTokenProvider.getToken();
             try {
@@ -49,9 +57,9 @@ public class AuthServiceClient {
                 return callLookup(paramName, paramValue, serviceTokenProvider.getToken());
             }
         } catch (HttpClientErrorException.NotFound e) {
-            throw new PixKeyNotFoundException();
+            throw notFound.get();
         } catch (RestClientException e) {
-            log.error("Failed to resolve PIX key with auth-service", e);
+            log.error("Failed to look up user with auth-service", e);
             throw new AuthServiceUnavailableException();
         }
     }
