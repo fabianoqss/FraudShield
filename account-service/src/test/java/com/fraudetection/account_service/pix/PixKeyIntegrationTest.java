@@ -40,10 +40,24 @@ class PixKeyIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     AccountRepository accountRepository;
 
+    @Autowired
+    PixLookupService pixLookupService;
+
+    @Autowired
+    org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
     @AfterEach
     void cleanUp() {
         pixKeyRepository.deleteAll();
         accountRepository.deleteAll();
+    }
+
+    @AfterEach
+    void clearRedis() {
+        var keys = redisTemplate.keys("pix:*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
     }
 
     @Test
@@ -74,6 +88,48 @@ class PixKeyIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(failures).hasSize(1).first().isInstanceOf(PixKeyLimitReachedException.class);
         assertThat(pixKeyRepository.countByAccount_Id(account.getId())).isEqualTo(5);
+    }
+
+    @Test
+    void lookupThenResolveWorksOnlyForTheRequester() {
+        Account recipient = newAccount(UUID.randomUUID());
+        when(authServiceClient.lookupById(recipient.getOwnerId())).thenReturn(
+                new UserLookupResponse(recipient.getOwnerId(), "Ana Souza", "ana@example.com", "52998224725"));
+        pixKeyService.register(recipient.getId(), recipient.getOwnerId(), PixKeyType.EMAIL);
+        UUID requester = UUID.randomUUID();
+
+        UUID lookupId = pixLookupService.lookup(requester, "ANA@example.com").lookupId();
+
+        assertThat(pixLookupService.resolve(lookupId, requester)).isEqualTo(recipient.getId());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> pixLookupService.resolve(lookupId, UUID.randomUUID()))
+                .isInstanceOf(com.fraudetection.account_service.pix.exceptions.PixLookupNotFoundException.class);
+    }
+
+    @Test
+    void lookupIsStoredWithTheConfiguredTtl() {
+        Account recipient = newAccount(UUID.randomUUID());
+        pixKeyService.register(recipient.getId(), recipient.getOwnerId(), PixKeyType.RANDOM);
+        String randomKey = pixKeyRepository.findAll().getFirst().getKeyValue();
+        when(authServiceClient.lookupById(recipient.getOwnerId())).thenReturn(
+                new UserLookupResponse(recipient.getOwnerId(), "Ana Souza", "ana@example.com", "52998224725"));
+
+        UUID lookupId = pixLookupService.lookup(UUID.randomUUID(), randomKey).lookupId();
+
+        assertThat(redisTemplate.getExpire("pix:lookup:" + lookupId)).isBetween(1L, 300L);
+    }
+
+    @Test
+    void resolveStillReturnsTheAccountShownEvenIfTheKeyWasRemoved() {
+        Account recipient = newAccount(UUID.randomUUID());
+        when(authServiceClient.lookupById(recipient.getOwnerId())).thenReturn(
+                new UserLookupResponse(recipient.getOwnerId(), "Ana Souza", "ana@example.com", "52998224725"));
+        var key = pixKeyService.register(recipient.getId(), recipient.getOwnerId(), PixKeyType.EMAIL);
+        UUID requester = UUID.randomUUID();
+        UUID lookupId = pixLookupService.lookup(requester, "ana@example.com").lookupId();
+
+        pixKeyService.delete(recipient.getId(), key.id(), recipient.getOwnerId());
+
+        assertThat(pixLookupService.resolve(lookupId, requester)).isEqualTo(recipient.getId());
     }
 
     Account newAccount(UUID ownerId) {

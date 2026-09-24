@@ -1,10 +1,12 @@
 package com.fraudetection.account_service.pix;
 
+import com.fraudetection.account_service.pix.dto.PixKeyLookupResponse;
 import com.fraudetection.account_service.pix.dto.PixKeyResponse;
 import com.fraudetection.account_service.pix.exceptions.InactiveAccountException;
 import com.fraudetection.account_service.pix.exceptions.PixKeyAlreadyRegisteredException;
 import com.fraudetection.account_service.pix.exceptions.PixKeyLimitReachedException;
 import com.fraudetection.account_service.pix.exceptions.PixKeyNotFoundException;
+import com.fraudetection.account_service.pix.exceptions.PixLookupRateLimitedException;
 import com.fraudetection.account_service.security.SecurityConfig;
 import com.fraudetection.account_service.security.TokenTypeAuthoritiesConverter;
 import com.fraudetection.account_service.services.exceptions.AccountAccessDeniedException;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.TestPropertySource;
@@ -19,6 +22,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +35,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -134,6 +139,56 @@ class PixKeyControllerTest {
         mockMvc.perform(delete("/accounts/{id}/pix-keys/{keyId}", ACCOUNT, keyId).with(userJwt()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("PIX key not found"));
+    }
+
+    @Test
+    void lookupReturnsRecipientForConfirmation() throws Exception {
+        UUID lookupId = UUID.randomUUID();
+        when(pixLookupService.lookup(USER, "ana@example.com")).thenReturn(new PixKeyLookupResponse(
+                lookupId, "Ana Souza", "***.982.247-**", PixKeyType.EMAIL, Instant.parse("2026-09-24T12:05:00Z")));
+
+        mockMvc.perform(lookup("ana@example.com").with(userJwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lookupId").value(lookupId.toString()))
+                .andExpect(jsonPath("$.recipientName").value("Ana Souza"))
+                .andExpect(jsonPath("$.maskedCpf").value("***.982.247-**"))
+                .andExpect(jsonPath("$.accountId").doesNotExist());
+    }
+
+    @Test
+    void lookupRequiresToken() throws Exception {
+        mockMvc.perform(lookup("ana@example.com")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(pixLookupService);
+    }
+
+    @Test
+    void blankLookupKeyIsBadRequest() throws Exception {
+        mockMvc.perform(lookup(" ").with(userJwt())).andExpect(status().isBadRequest());
+        verifyNoInteractions(pixLookupService);
+    }
+
+    @Test
+    void rateLimitedLookupReturns429WithRetryAfter() throws Exception {
+        when(pixLookupService.lookup(USER, "ana@example.com")).thenThrow(new PixLookupRateLimitedException(15));
+
+        mockMvc.perform(lookup("ana@example.com").with(userJwt()))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string("Retry-After", "15"));
+    }
+
+    @Test
+    void redisOutageOnLookupIsServiceUnavailable() throws Exception {
+        when(pixLookupService.lookup(USER, "ana@example.com"))
+                .thenThrow(new RedisConnectionFailureException("Redis down"));
+
+        mockMvc.perform(lookup("ana@example.com").with(userJwt()))
+                .andExpect(status().isServiceUnavailable());
+    }
+
+    private static MockHttpServletRequestBuilder lookup(String key) {
+        return post("/accounts/pix-keys/lookup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"key\":\"" + key + "\"}");
     }
 
     private static MockHttpServletRequestBuilder register(String type) {

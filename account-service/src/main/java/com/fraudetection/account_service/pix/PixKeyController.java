@@ -1,5 +1,7 @@
 package com.fraudetection.account_service.pix;
 
+import com.fraudetection.account_service.pix.dto.PixKeyLookupRequest;
+import com.fraudetection.account_service.pix.dto.PixKeyLookupResponse;
 import com.fraudetection.account_service.pix.dto.PixKeyResponse;
 import com.fraudetection.account_service.pix.dto.RegisterPixKeyRequest;
 import jakarta.validation.Valid;
@@ -44,6 +46,12 @@ public class PixKeyController {
                                        Authentication authentication) {
         pixKeyService.delete(accountId, keyId, userId(authentication));
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/pix-keys/lookup")
+    public ResponseEntity<PixKeyLookupResponse> lookup(@Valid @RequestBody PixKeyLookupRequest request,
+                                                       Authentication authentication) {
+        return ResponseEntity.ok(pixLookupService.lookup(userId(authentication), request.key()));
     }
 
     private static UUID userId(Authentication authentication) {
