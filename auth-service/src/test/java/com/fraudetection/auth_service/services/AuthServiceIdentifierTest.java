@@ -89,8 +89,17 @@ class AuthServiceIdentifierTest {
         when(userRepository.findByCpf("52998224725")).thenReturn(Optional.of(user));
         when(userRepository.findByEmail("ana@example.com")).thenReturn(Optional.of(user));
 
-        assertThat(authService.lookup(null, "529.982.247-25").userId()).isEqualTo(user.getId());
-        assertThat(authService.lookup("Ana@Example.com", null).userId()).isEqualTo(user.getId());
+        assertThat(authService.lookup(null, null, "529.982.247-25").userId()).isEqualTo(user.getId());
+        assertThat(authService.lookup(null, "Ana@Example.com", null).userId()).isEqualTo(user.getId());
+    }
+
+    @Test
+    void lookupFindsUserById() {
+        User user = new User();
+        user.setId(UUID.randomUUID());
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        assertThat(authService.lookup(user.getId(), null, null).userId()).isEqualTo(user.getId());
     }
 
     private RegisterRequest registerRequest(String email, String cpf) {
