@@ -2,6 +2,7 @@ package com.fraudetection.transaction_service.services;
 
 import com.fraudetection.transaction_service.clients.AccountServiceClient;
 import com.fraudetection.transaction_service.dto.request.TransactionRequest;
+import com.fraudetection.transaction_service.dto.response.TransactionPageResponse;
 import com.fraudetection.transaction_service.dto.response.TransactionResponse;
 import com.fraudetection.transaction_service.entities.Transaction;
 import com.fraudetection.transaction_service.enums.PaymentStatus;
@@ -12,6 +13,10 @@ import com.fraudetection.transaction_service.services.exceptions.DuplicateIdempo
 import com.fraudetection.transaction_service.services.exceptions.InsufficientFundsException;
 import com.fraudetection.transaction_service.services.exceptions.TransactionNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,9 +24,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TransactionService {
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final TransactionRepository transactionRepository;
     private final TransactionCreatedProducer transactionCreatedProducer;
@@ -69,6 +77,37 @@ public class TransactionService {
         }
 
         return toResponse(transaction);
+    }
+
+    public TransactionPageResponse listTransactions(UUID accountId, int page, int size) {
+        accountServiceClient.requireOwnedAccount(accountId);
+
+        PageRequest pageRequest = PageRequest.of(
+                Math.max(page, 0),
+                Math.clamp(size, 1, MAX_PAGE_SIZE),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Transaction> result = transactionRepository
+                .findBySourceAccountIdOrDestinationAccountId(accountId, accountId, pageRequest);
+
+        return new TransactionPageResponse(
+                result.getContent().stream().map(this::toResponse).toList(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages()
+        );
+    }
+
+    @Transactional
+    public void applyOutcome(UUID transactionId, PaymentStatus outcome) {
+        int updated = transactionRepository.updateStatusIf(transactionId, PaymentStatus.CREATED, outcome);
+        if (updated == 1) {
+            log.info("Transaction {} is now {}", transactionId, outcome);
+        } else if (transactionRepository.existsById(transactionId)) {
+            log.info("Transaction {} already has its outcome, ignoring {}", transactionId, outcome);
+        } else {
+            log.warn("Outcome {} received for unknown transaction {}", outcome, transactionId);
+        }
     }
 
     private TransactionResponse toResponse(Transaction transaction) {

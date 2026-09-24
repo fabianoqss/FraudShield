@@ -7,9 +7,6 @@ Every client call goes to **api-gateway** at `http://localhost:8080`. The gatewa
 - IDs are UUID strings. Timestamps are ISO-8601 strings.
 - Authenticated routes need `Authorization: Bearer <accessToken>`.
 
-Endpoints marked **(new)** are being added on branch `feat/frontend-support-api`; the contract
-below is final, so clients can be written against it before they are live.
-
 ---
 
 ## Errors
@@ -106,7 +103,7 @@ Errors: `400` (fieldErrors or passwords do not match), `401` wrong current passw
 
 ## Accounts
 
-### `GET /accounts` — authenticated **(new)**
+### `GET /accounts` — authenticated
 The caller's accounts, oldest first. Empty array if the user has none yet.
 
 `200`:
@@ -184,7 +181,7 @@ Errors: `400`, `404` unknown PIX key.
 Errors: `400`, `403` source account is not yours, `404` unknown source account,
 `409` idempotency key already used, `422` insufficient funds or unknown destination account.
 
-**Status lifecycle (new).** A transfer is created as `CREATED` and is analyzed asynchronously,
+**Status lifecycle.** A transfer is created as `CREATED` and is analyzed asynchronously,
 usually within a few seconds. Its status then becomes one of:
 
 | Status | Meaning | Money |
@@ -199,7 +196,7 @@ Poll `GET /transactions/{id}` (e.g. every 1–2 s, up to ~30 s) to show the outc
 `200`: same body as creation, with the current `status`. Visible to the owners of the source
 and of the destination account; anyone else gets `404`.
 
-### `GET /transactions?accountId={id}&page=0&size=20` — authenticated, owner only **(new)**
+### `GET /transactions?accountId={id}&page=0&size=20` — authenticated, owner only
 Transactions where the account is the source **or** the destination, newest first.
 `page` starts at 0; `size` is clamped to 1..100 (default 20).
 

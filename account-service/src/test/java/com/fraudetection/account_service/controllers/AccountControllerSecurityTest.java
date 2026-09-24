@@ -1,5 +1,6 @@
 package com.fraudetection.account_service.controllers;
 
+import com.fraudetection.account_service.dto.response.AccountResponse;
 import com.fraudetection.account_service.dto.response.BalanceResponse;
 import com.fraudetection.account_service.dto.response.DepositResponse;
 import com.fraudetection.account_service.security.SecurityConfig;
@@ -16,6 +17,8 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -78,6 +81,29 @@ class AccountControllerSecurityTest {
                 .andExpect(jsonPath("$.accountId").value(accountId.toString()));
 
         verify(accountService).getBalance(accountId, userId);
+    }
+
+    @Test
+    void listAccountsRequiresToken() throws Exception {
+        mockMvc.perform(get("/accounts"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(accountService);
+    }
+
+    @Test
+    void listAccountsReturnsOnlyTheCallersAccounts() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID accountId = UUID.randomUUID();
+        when(accountService.listAccounts(userId)).thenReturn(List.of(new AccountResponse(
+                accountId, userId, "Ana Souza", BigDecimal.TEN, BigDecimal.ZERO, "ACTIVE", LocalDateTime.now())));
+
+        mockMvc.perform(get("/accounts").with(userJwt(userId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(accountId.toString()))
+                .andExpect(jsonPath("$[0].ownerId").value(userId.toString()));
+
+        verify(accountService).listAccounts(userId);
     }
 
     @Test

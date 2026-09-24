@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,6 +25,12 @@ import java.util.UUID;
 public class AccountController {
 
     private final AccountService accountService;
+
+    @GetMapping("/accounts")
+    public ResponseEntity<List<AccountResponse>> list(Authentication authentication) {
+        UUID requestingUserId = UUID.fromString(authentication.getName());
+        return ResponseEntity.ok(accountService.listAccounts(requestingUserId));
+    }
 
     @PostMapping("/accounts")
     public ResponseEntity<AccountResponse> create(@Valid @RequestBody CreateAccountRequest request,
