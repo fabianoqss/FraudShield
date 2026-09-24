@@ -3,6 +3,7 @@ export class ApiError extends Error {
     public status: number,
     message: string,
     public fieldErrors: Record<string, string> = {},
+    public retryAfter: string | null = null,
   ) {
     super(message);
   }
@@ -147,6 +148,7 @@ export class ApiClient {
           ? data.message
           : `Falha na solicitação (${response.status}).`,
         fields,
+        response.headers.get("Retry-After"),
       );
     }
     if (data === null) throw new NetworkError();

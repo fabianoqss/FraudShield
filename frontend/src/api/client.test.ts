@@ -271,3 +271,16 @@ it("treats a broken response body as an uncertain network outcome", async () => 
     client.request("/accounts/deposit", { public: true }),
   ).rejects.toThrow("Não foi possível confirmar");
 });
+
+it("exposes Retry-After on API errors for PIX lookup throttling", async () => {
+  const transport = vi.fn<typeof fetch>()
+    .mockResolvedValueOnce(json(tokens("Ana")))
+    .mockResolvedValueOnce(new Response(JSON.stringify({ message: "Too many PIX key lookups" }), {
+      status: 429, headers: { "Retry-After": "17" },
+    }));
+  const client = new ApiClient(transport);
+  await client.login("ana@example.com", "password");
+  await expect(client.request("/accounts/pix-keys/lookup", {
+    method: "POST", body: { key: "ana@example.com" },
+  })).rejects.toMatchObject({ status: 429, retryAfter: "17" });
+});

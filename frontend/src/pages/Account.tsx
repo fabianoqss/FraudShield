@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router";
-import { api } from "../api/client";
+import { api, ApiError } from "../api/client";
 import type { Balance } from "../api/types";
 import { currency } from "../api/types";
 import { useAccounts } from "../auth/Accounts";
@@ -78,12 +78,13 @@ export function AccountPage() {
       ) : (
         <>
           <p>{account.ownerName}</p>
-          <p>Identificador para receber transferências:</p>
+          <p>Identificador da conta:</p>
           <code className="account-id">{account.id}</code>
           <button className="secondary" onClick={() => void copy()}>
             Copiar identificador
           </button>
           {copied && <p role="status">Identificador copiado.</p>}
+          <p>Para receber transferências, cadastre uma chave em <Link to="/chaves">Minhas chaves PIX</Link>.</p>
           {balance ? (
             <dl className="balances">
               <div>
@@ -139,7 +140,7 @@ export function DepositPage() {
         method: "POST",
         public: true,
         body: {
-          pixKey: rawKey.includes("@") ? rawKey : rawKey.replace(/\D/g, ""),
+          pixKey: rawKey,
           amount: parseAmount(values.amount ?? ""),
         },
       });
@@ -148,7 +149,9 @@ export function DepositPage() {
       );
       form.reset();
     } catch (cause) {
-      setError(cause);
+      setError(cause instanceof ApiError && cause.status === 400
+        ? new ApiError(400, "Formato inválido. Verifique a chave PIX e o valor.", { ...cause.fieldErrors, pixKey: cause.fieldErrors.pixKey ?? (Object.keys(cause.fieldErrors).length ? "" : "Formato de chave PIX inválido.") })
+        : cause);
     } finally {
       setBusy(false);
     }
@@ -157,14 +160,14 @@ export function DepositPage() {
     <section>
       <h1>Depósito PIX simulado</h1>
       <p>
-        Informe o e-mail ou CPF do destinatário. Nenhum dinheiro real será
+        Informe uma chave PIX cadastrada (e-mail, CPF ou chave aleatória). Nenhum dinheiro real será
         movimentado.
       </p>
       <form onSubmit={submit}>
         <fieldset disabled={busy}>
           <Field
             name="pixKey"
-            label="Chave PIX (e-mail ou CPF)"
+            label="Chave PIX (e-mail, CPF ou aleatória)"
             required
             error={fields.pixKey}
           />
@@ -180,7 +183,7 @@ export function DepositPage() {
         </fieldset>
         <ErrorNotice
           error={error}
-          notFoundMessage="Chave PIX não encontrada."
+          notFoundMessage="Chave PIX não cadastrada."
         />
       </form>
       {message && (

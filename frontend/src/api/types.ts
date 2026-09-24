@@ -27,7 +27,7 @@ export interface Transaction {
 }
 export interface TransferRequest {
   sourceAccountId: string;
-  destinationAccountId: string;
+  lookupId: string;
   amount: number;
   type: PaymentType;
   deviceId: string;
@@ -65,3 +65,19 @@ export const currency = (amount: number) =>
   );
 export const dateTime = (value: string) =>
   new Date(value).toLocaleString("pt-BR");
+
+export type PixKeyType = "CPF" | "EMAIL" | "RANDOM";
+export interface PixKey {
+  id: string;
+  type: PixKeyType;
+  value: string;
+  accountId: string;
+  createdAt: string;
+}
+export interface PixKeyLookup {
+  lookupId: string;
+  recipientName: string;
+  maskedCpf: string;
+  keyType: PixKeyType;
+  expiresAt: string;
+}

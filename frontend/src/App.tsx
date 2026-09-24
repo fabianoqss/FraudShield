@@ -5,6 +5,7 @@ import { useSession } from "./auth/useSession";
 import { AccountsProvider } from "./auth/Accounts";
 import { AuthPage, PasswordPage } from "./pages/Auth";
 import { AccountPage, DepositPage } from "./pages/Account";
+import { PixKeysPage } from "./pages/PixKeys";
 import { TransferPage } from "./pages/Transfer";
 import { StatementPage, TransactionPage } from "./pages/Statement";
 
@@ -54,6 +55,7 @@ export function App() {
                 Minha conta
               </NavLink>
               <NavLink to="/deposito">Depositar</NavLink>
+              <NavLink to="/chaves">Minhas chaves PIX</NavLink>
               <NavLink to="/transferir">Transferir</NavLink>
               <NavLink to="/extrato">Extrato</NavLink>
               <NavLink to="/senha">Trocar senha</NavLink>
@@ -80,6 +82,7 @@ export function App() {
           <Route path="/deposito" element={<DepositPage />} />
           <Route element={<AccountRoutes />}>
             <Route path="/" element={<AccountPage />} />
+            <Route path="/chaves" element={<PixKeysPage />} />
             <Route path="/transferir" element={<TransferPage />} />
             <Route path="/extrato" element={<StatementPage />} />
             <Route path="/extrato/:id" element={<TransactionPage />} />

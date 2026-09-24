@@ -37,8 +37,9 @@ O build gera `dist/`. Para publicar esse diretório, configure no servidor o enc
 - Cadastro com erros por campo; login e aviso de bloqueio por 15 minutos no HTTP 429.
 - Rotas protegidas e restauração da sessão ao recarregar a página.
 - Listagem/seleção de contas, criação quando não há contas, saldo total, bloqueado e disponível, cópia do identificador.
-- Depósito PIX simulado por e-mail ou CPF.
-- Transferências PIX, crédito ou débito, com acompanhamento a cada 1,5 segundo por até 30 segundos.
+- Minhas chaves PIX (`/chaves`): lista por conta selecionada, cadastro de CPF/e-mail do usuário ou chave aleatória, cópia e remoção com confirmação; limite de 5 chaves.
+- Depósito PIX simulado por chave cadastrada (e-mail, CPF ou aleatória); chave não cadastrada retorna aviso específico.
+- Transferências PIX, crédito ou débito por consulta de chave → confirmação do nome e CPF mascarado, com acompanhamento a cada 1,5 segundo por até 30 segundos.
 - Extrato paginado com origem/destino e status, detalhes da transação e eventos de auditoria com pontuação de fraude.
 - Troca de senha seguida de logout e logout explícito.
 
@@ -54,6 +55,14 @@ Cada novo envio de transferência recebe um UUID. Em falha de rede ou resposta i
 
 ## Decisões e limites do contrato
 
+- O cadastro de chave envia somente `{ type }`; o servidor fornece o valor. CPF e e-mail já presentes na conta ficam desabilitados. Podem existir várias chaves aleatórias distintas, respeitando o limite total de 5.
+- A chave consultada vai somente no corpo de `POST /accounts/pix-keys/lookup`. O formulário não recebe nem armazena identificador da conta de destino: confirma nome/CPF mascarado e envia `lookupId` em `POST /transactions`, para todos os tipos de pagamento.
+- O `lookupId` vale por 5 minutos. A tela usa `expiresAt` para voltar à consulta ao expirar, preservando chave e valor; uma rejeição de consulta expirada/inválida no servidor faz o mesmo. Voltar ou iniciar nova transferência exige nova consulta.
+- Em HTTP 429 na consulta, o botão fica bloqueado pela quantidade de segundos de `Retry-After`, com contagem regressiva. Se o header estiver ausente ou inválido, o fallback é 60 segundos (janela documentada na spec).
+- Repetir um envio incerto mantém o payload original, inclusive `lookupId`, mesmo se a consulta já expirou: o backend verifica idempotência antes da consulta. Não se substitui silenciosamente uma consulta em um envio pendente.
+- O contrato mantém `destinationAccountId` nas respostas de transações e no histórico. O extrato existente continua usando esse campo; a consulta e o payload de transferência não o usam.
+- Os diferentes erros 422 não têm código estruturado. A identificação de consulta inválida/expirada e mesma conta usa as mensagens documentadas do backend; erros não reconhecidos preservam `message`.
+
 - Repetir uma chave já aceita retorna 409, sem recuperar o ID original. A interface orienta consultar o extrato e não declara que a primeira tentativa falhou.
 - O fim dos 30 segundos de polling significa análise pendente, não rejeição. Navegar para outra tela cancela o acompanhamento.
 - `FLAGGED` aparece como “EM REVISÃO” e mantém o valor reservado. Não há revisão manual implementada no backend.
@@ -65,6 +74,6 @@ Cada novo envio de transferência recebe um UUID. Em falha de rede ou resposta i
 
 ## Testes
 
-Vitest + Testing Library em jsdom cobrem renovação single-flight, 401 atrasado, limite de repetição, falha de refresh, restauração, logout concorrente, JWT com acentos, respostas 204 e erros não JSON, cadastro/login, troca de senha, transferência com 422/409, idempotência após falha de rede, polling, cancelamento e paginação do ledger.
+Vitest + Testing Library em jsdom cobrem renovação single-flight, 401 atrasado, limite de repetição, falha de refresh, restauração, logout concorrente, JWT com acentos, respostas 204 e erros não JSON, cadastro/login, troca de senha, cadastro/listagem/remoção de chaves, limite de 5, depósito por chave cadastrada, consulta e confirmação de transferência, expiração local e HTTP 422, espera de Retry-After, erros 404/409/503, idempotência após falha de rede, polling, cancelamento e paginação do ledger.
 
 Os testes substituem o transporte HTTP ou métodos do cliente dentro do processo de testes. Não iniciam servidor simulado. A validação automatizada não substitui um teste integrado com todos os serviços reais em execução.
