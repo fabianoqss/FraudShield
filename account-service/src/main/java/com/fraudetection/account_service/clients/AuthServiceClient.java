@@ -2,7 +2,7 @@ package com.fraudetection.account_service.clients;
 
 import com.fraudetection.account_service.dto.response.UserLookupResponse;
 import com.fraudetection.account_service.services.exceptions.AuthServiceUnavailableException;
-import com.fraudetection.account_service.services.exceptions.PixKeyNotFoundException;
+import com.fraudetection.account_service.pix.exceptions.PixKeyNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

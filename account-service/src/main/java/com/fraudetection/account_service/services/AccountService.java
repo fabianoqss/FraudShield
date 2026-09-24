@@ -11,7 +11,7 @@ import com.fraudetection.account_service.entities.Account;
 import com.fraudetection.account_service.repositories.AccountRepository;
 import com.fraudetection.account_service.services.exceptions.AccountAccessDeniedException;
 import com.fraudetection.account_service.services.exceptions.AccountNotFoundException;
-import com.fraudetection.account_service.services.exceptions.PixKeyNotFoundException;
+import com.fraudetection.account_service.pix.exceptions.PixKeyNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

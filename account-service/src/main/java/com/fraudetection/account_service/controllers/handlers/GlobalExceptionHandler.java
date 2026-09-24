@@ -4,7 +4,7 @@ import com.fraudetection.account_service.dto.response.ErrorResponse;
 import com.fraudetection.account_service.services.exceptions.AccountAccessDeniedException;
 import com.fraudetection.account_service.services.exceptions.AccountNotFoundException;
 import com.fraudetection.account_service.services.exceptions.AuthServiceUnavailableException;
-import com.fraudetection.account_service.services.exceptions.PixKeyNotFoundException;
+import com.fraudetection.account_service.pix.exceptions.PixKeyNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;

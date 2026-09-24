@@ -1,7 +1,9 @@
 package com.fraudetection.account_service.repositories;
 
 import com.fraudetection.account_service.entities.Account;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +19,10 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     Optional<Account> findFirstByOwnerId(UUID ownerId);
 
     List<Account> findByOwnerIdOrderByCreatedAtAsc(UUID ownerId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from Account a where a.id = :id")
+    Optional<Account> findByIdForUpdate(@Param("id") UUID id);
 
     @Transactional
     @Modifying

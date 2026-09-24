@@ -2,7 +2,7 @@ package com.fraudetection.account_service.clients;
 
 import com.fraudetection.account_service.dto.response.UserLookupResponse;
 import com.fraudetection.account_service.services.exceptions.AuthServiceUnavailableException;
-import com.fraudetection.account_service.services.exceptions.PixKeyNotFoundException;
+import com.fraudetection.account_service.pix.exceptions.PixKeyNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
