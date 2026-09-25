@@ -36,6 +36,6 @@ class TransactionRequestValidationTest {
 
     private Set<ConstraintViolation<TransactionRequest>> violationsFor(String amount) {
         return validator.validate(new TransactionRequest(UUID.randomUUID(), UUID.randomUUID(), new BigDecimal(amount),
-                PaymentType.PIX, "device", null, "key"));
+                PaymentType.PIX, "device", "key"));
     }
 }

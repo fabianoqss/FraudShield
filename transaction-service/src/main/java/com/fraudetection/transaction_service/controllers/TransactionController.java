@@ -3,7 +3,9 @@ package com.fraudetection.transaction_service.controllers;
 import com.fraudetection.transaction_service.dto.request.TransactionRequest;
 import com.fraudetection.transaction_service.dto.response.TransactionPageResponse;
 import com.fraudetection.transaction_service.dto.response.TransactionResponse;
+import com.fraudetection.transaction_service.services.ClientIpResolver;
 import com.fraudetection.transaction_service.services.TransactionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,11 +26,13 @@ import java.util.UUID;
 public class TransactionController implements TransactionApi {
 
     private final TransactionService transactionService;
+    private final ClientIpResolver clientIpResolver;
 
     @Override
     @PostMapping
-    public ResponseEntity<TransactionResponse> createRequest(@Valid @RequestBody TransactionRequest request) {
-        TransactionResponse response = transactionService.createTransaction(request);
+    public ResponseEntity<TransactionResponse> createRequest(@Valid @RequestBody TransactionRequest request,
+                                                              HttpServletRequest servletRequest) {
+        TransactionResponse response = transactionService.createTransaction(request, clientIpResolver.resolve(servletRequest));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

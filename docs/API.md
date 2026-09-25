@@ -54,7 +54,7 @@ carries a `Retry-After` header in seconds.
 3. **Create the transfer.** `POST /transactions` with the `lookupId` from step 2. A `lookupId` lasts 5 minutes,
    works only for the user who made the lookup and can be reused while valid, e.g. to retry.
    - `idempotencyKey`: a new UUID per transfer the user submits, reused only to retry that same submission.
-   - `deviceId`: a random id the browser generates once and keeps in `localStorage`. Send `ipAddress` as `null`.
+   - `deviceId`: a random id the browser generates once and keeps in `localStorage`. The server obtains the client IP from the gateway connection; do not send `ipAddress`.
    - A `422` for an expired or invalid lookup means going back to step 2.
 4. **Wait for the outcome.** The transfer is created as `CREATED` and analyzed asynchronously, usually within a
    few seconds. Poll `GET /transactions/{id}` every 1–2 s, for up to ~30 s:

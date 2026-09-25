@@ -58,6 +58,7 @@ class OpenApiDocsTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(jsonPath(fields + ".lookupId.description").value(containsString("pix-keys/lookup")))
                 .andExpect(jsonPath(fields + ".idempotencyKey.description").value(containsString("retry")))
-                .andExpect(jsonPath(fields + ".deviceId.description").exists());
+                .andExpect(jsonPath(fields + ".deviceId.description").exists())
+                .andExpect(jsonPath(fields + ".ipAddress").doesNotExist());
     }
 }

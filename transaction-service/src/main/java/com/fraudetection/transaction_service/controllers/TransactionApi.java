@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;
@@ -23,6 +24,7 @@ public interface TransactionApi {
                     + "reserved on the source account and the transfer is created as `CREATED`; fraud analysis runs "
                     + "asynchronously, usually within a few seconds, and moves it to `APPROVED` (money moved), "
                     + "`DENIED` (reservation released) or `FLAGGED` (held for manual review, money stays reserved). "
+                    + "The server obtains the client IP from the gateway connection. "
                     + "Poll `GET /transactions/{id}` (e.g. every 1-2 s, up to ~30 s) to show the outcome.")
     @ApiResponse(responseCode = "201", description = "Transfer created as `CREATED`")
     @ApiResponse(responseCode = "400", description = "Validation failed or malformed body")
@@ -33,7 +35,8 @@ public interface TransactionApi {
     @ApiResponse(responseCode = "422", description = "Insufficient funds, PIX lookup expired or invalid (look the "
             + "key up again), or the destination is the source account")
     @ApiResponse(responseCode = "503", description = "account-service is unavailable")
-    ResponseEntity<TransactionResponse> createRequest(TransactionRequest request);
+    ResponseEntity<TransactionResponse> createRequest(TransactionRequest request,
+                                                       @Parameter(hidden = true) HttpServletRequest servletRequest);
 
     @Operation(summary = "List an account's transfers",
             description = "Transfers where the account is the source or the destination, newest first. `page` "

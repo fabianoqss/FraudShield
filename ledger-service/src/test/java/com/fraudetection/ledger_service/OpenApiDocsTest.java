@@ -39,6 +39,7 @@ class OpenApiDocsTest extends BaseIntegrationTest {
                 .andExpect(jsonPath(ledger + ".summary").exists())
                 .andExpect(jsonPath(ledger + ".responses['403'].content['application/json'].schema['$ref']")
                         .value(endsWith("/ErrorResponse")))
+                .andExpect(jsonPath(ledger + ".responses['400']").exists())
                 .andExpect(jsonPath(ledger + ".responses['404']").exists())
                 .andExpect(jsonPath(ledger + ".responses['503']").exists());
     }

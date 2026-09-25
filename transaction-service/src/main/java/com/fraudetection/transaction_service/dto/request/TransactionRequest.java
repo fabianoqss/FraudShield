@@ -30,9 +30,6 @@ public record TransactionRequest(
                 + "in localStorage.")
         String deviceId,
 
-        @Schema(description = "Optional fraud signal; a browser client sends null.")
-        String ipAddress,
-
         @Schema(description = "A new UUID per transfer the user submits; reuse it only to retry the same "
                 + "submission (e.g. after a network error).")
         @NotBlank String idempotencyKey

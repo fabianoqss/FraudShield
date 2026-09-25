@@ -37,7 +37,7 @@ public class TransactionService {
 
     // Not @Transactional on purpose: the account-service calls must not hold a DB connection, and
     // transaction.created must only be published once the row is committed. save() commits on return.
-    public TransactionResponse createTransaction(TransactionRequest request) {
+    public TransactionResponse createTransaction(TransactionRequest request, String clientIp) {
         if (transactionRepository.existsByIdempotencyKey(request.idempotencyKey())) {
             throw new DuplicateIdempotencyKeyException(request.idempotencyKey());
         }
@@ -60,7 +60,7 @@ public class TransactionService {
         transaction.setStatus(PaymentStatus.CREATED);
         transaction.setIdempotencyKey(request.idempotencyKey());
         transaction.setDeviceId(request.deviceId());
-        transaction.setIpAddress(request.ipAddress());
+        transaction.setIpAddress(clientIp);
         transaction.setCreatedAt(LocalDateTime.now());
 
         Transaction saved = transactionRepository.save(transaction);

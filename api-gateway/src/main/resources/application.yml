@@ -1,3 +1,7 @@
+# Keep getRemoteAddr() bound to the socket peer, never to client-supplied forwarding headers.
+server:
+  forward-headers-strategy: none
+
 spring:
   application:
     name: api-gateway
@@ -10,6 +14,17 @@ spring:
     gateway:
       server:
         webmvc:
+          # Gateway 5.0.2 requires this nonempty pattern to enable XForwardedRequestHeadersFilter.
+          # All socket peers may produce an XFF value, but supplied values are REPLACED, never trusted.
+          trusted-proxies: '.*'
+          forwarded-request-headers-filter:
+            enabled: false
+          x-forwarded-request-headers-filter:
+            for-append: false
+            host-append: false
+            port-append: false
+            proto-append: false
+            prefix-enabled: false
           routes:
             - id: auth-service
               uri: ${AUTH_SERVICE_URL:http://localhost:8081}

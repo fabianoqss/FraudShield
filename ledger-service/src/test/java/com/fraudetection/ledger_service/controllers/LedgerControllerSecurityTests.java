@@ -1,10 +1,12 @@
 package com.fraudetection.ledger_service.controllers;
 
+import com.fraudetection.ledger_service.documents.LedgerEntry;
 import com.fraudetection.ledger_service.security.SecurityConfig;
 import com.fraudetection.ledger_service.security.TokenTypeAuthoritiesConverter;
 import com.fraudetection.ledger_service.clients.AccountServiceClient;
 import com.fraudetection.ledger_service.services.LedgerQueryService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -15,6 +17,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.Mockito.*;
@@ -80,6 +85,56 @@ class LedgerControllerSecurityTests {
                 .andExpect(jsonPath("$.message").value("Access denied"));
     }
 
+
+    @Test
+    void recipientGetsOnlyStatementFields() throws Exception {
+        stubEntry(UUID.randomUUID());
+        mockMvc.perform(get(PATH).with(userJwt(UUID.randomUUID())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.entries[0].direction").value("INCOMING"))
+                .andExpect(jsonPath("$.entries[0].amount").value(12.34))
+                .andExpect(jsonPath("$.entries[0].reason").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].length()").value(6))
+                .andExpect(jsonPath("$.entries[0].eventPayload").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].fraudScore").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].ipAddress").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].deviceId").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].idempotencyKey").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].sourceAccountId").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].destinationAccountId").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].kafkaTopic").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].kafkaOffset").doesNotExist());
+    }
+
+    @Test
+    void senderGetsDeniedReason() throws Exception {
+        stubEntry(ID);
+        mockMvc.perform(get(PATH).with(userJwt(UUID.randomUUID())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.entries[0].direction").value("OUTGOING"))
+                .andExpect(jsonPath("$.entries[0].reason").value("Risk detected"))
+                .andExpect(jsonPath("$.entries[0].length()").value(7));
+    }
+
+    @Test
+    void invalidAccountIdReturnsBadRequest() throws Exception {
+        mockMvc.perform(get("/ledger/account/not-a-uuid").with(userJwt(UUID.randomUUID())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid value for parameter: id"));
+        verifyNoInteractions(accountServiceClient, ledgerQueryService);
+    }
+
+    private void stubEntry(UUID source) {
+        var payload = Map.<String, Object>of(
+                "sourceAccountId", source.toString(), "destinationAccountId", (source.equals(ID) ? UUID.randomUUID() : ID).toString(),
+                "amount", 12.34, "reason", "Risk detected", "fraudScore", 0.99,
+                "ipAddress", "8.8.8.8", "deviceId", "secret-device", "idempotencyKey", "secret-key");
+        var entry = new LedgerEntry(
+                UUID.randomUUID(), UUID.randomUUID(), "TRANSACTION_DENIED", payload,
+                "transaction.denied", 42, Instant.now());
+        when(ledgerQueryService.getEntriesForAccount(ID, 0, 20))
+                .thenReturn(new PageImpl<>(List.of(entry)));
+    }
 
     private static SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor userJwt(UUID userId) {
         return jwt()
