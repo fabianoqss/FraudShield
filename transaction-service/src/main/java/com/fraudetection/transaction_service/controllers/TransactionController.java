@@ -21,16 +21,18 @@ import java.util.UUID;
 @RestController
 @RequestMapping(value = "/transactions")
 @RequiredArgsConstructor
-public class TransactionController {
+public class TransactionController implements TransactionApi {
 
     private final TransactionService transactionService;
 
+    @Override
     @PostMapping
     public ResponseEntity<TransactionResponse> createRequest(@Valid @RequestBody TransactionRequest request) {
         TransactionResponse response = transactionService.createTransaction(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Override
     @GetMapping
     public ResponseEntity<TransactionPageResponse> listRequest(@RequestParam UUID accountId,
                                                                @RequestParam(defaultValue = "0") int page,
@@ -38,6 +40,7 @@ public class TransactionController {
         return ResponseEntity.ok(transactionService.listTransactions(accountId, page, size));
     }
 
+    @Override
     @GetMapping("/{id}")
     public ResponseEntity<TransactionResponse> getRequest(@PathVariable UUID id) {
         return ResponseEntity.ok(transactionService.getTransaction(id));
