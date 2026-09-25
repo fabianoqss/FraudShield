@@ -24,16 +24,18 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/accounts")
 @RequiredArgsConstructor
-public class AccountController {
+public class AccountController implements AccountApi {
 
     private final AccountService accountService;
 
+    @Override
     @GetMapping
     public ResponseEntity<List<AccountResponse>> list(Authentication authentication) {
         UUID requestingUserId = UUID.fromString(authentication.getName());
         return ResponseEntity.ok(accountService.listAccounts(requestingUserId));
     }
 
+    @Override
     @PostMapping
     public ResponseEntity<AccountResponse> create(@Valid @RequestBody CreateAccountRequest request,
                                                     Authentication authentication) {
@@ -42,12 +44,14 @@ public class AccountController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Override
     @GetMapping("/{id}/balance")
     public ResponseEntity<BalanceResponse> getBalance(@PathVariable UUID id, Authentication authentication) {
         UUID requestingUserId = UUID.fromString(authentication.getName());
         return ResponseEntity.ok(accountService.getBalance(id, requestingUserId));
     }
 
+    @Override
     @PostMapping("/deposit")
     public ResponseEntity<DepositResponse> deposit(@Valid @RequestBody PixDepositRequest request) {
         return ResponseEntity.ok(accountService.depositByPixKey(request));

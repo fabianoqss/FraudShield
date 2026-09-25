@@ -6,6 +6,7 @@ Every client call goes to **api-gateway** at `http://localhost:8080`. The gatewa
 - JSON in and out. Money is a JSON number with up to 2 decimals (`150.00`).
 - IDs are UUID strings. Timestamps are ISO-8601 strings.
 - Authenticated routes need `Authorization: Bearer <accessToken>`.
+- Interactive docs: `http://localhost:8080/swagger-ui.html` (generated from the code, local runs only). This file stays the hand-written contract for the frontend.
 
 ---
 
@@ -143,7 +144,7 @@ The caller's accounts, oldest first. Empty array if the user has none yet.
 ```json
 { "receiverName": "Ana Souza", "amount": 150.00 }
 ```
-Errors: `400` validation or invalid key format, `404` key not registered.
+Errors: `400` validation or invalid key format (message: "Invalid PIX key format. Use a CPF (11 digits), an e-mail or a random key (UUID)."), `404` key not registered.
 Note: this simulated endpoint is public and not rate limited; it confirms whether a key is registered. It is
 meant for local testing, not production.
 
@@ -188,7 +189,7 @@ Look up the recipient **before** a transfer. The key goes in the body, never in 
 Show `recipientName` and `maskedCpf` for confirmation and send `lookupId` in `POST /transactions`.
 A `lookupId` is valid for 5 minutes, only for the user who made the lookup, and can be reused while valid
 (e.g. to retry after a failed transfer).
-Errors: `400` invalid key format, `404` key not registered, `429` more than 20 lookups per minute
+Errors: `400` invalid key format (message: "Invalid PIX key format. Use a CPF (11 digits), an e-mail or a random key (UUID)."), `404` key not registered, `429` more than 20 lookups per minute
 (`Retry-After` header, in seconds), `503` dependency unavailable.
 
 ---

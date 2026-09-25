@@ -52,6 +52,11 @@ service-client:
   id: account-service
   secret: ${SERVICE_CLIENT_ACCOUNT_SECRET:}
 
+springdoc:
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:true}
+  paths-to-exclude: /internal/**
+
 pix:
   lookup-ttl: 5m
   lookups-per-minute: 20
