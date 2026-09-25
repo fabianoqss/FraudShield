@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -42,17 +43,13 @@ public class BalanceLockService {
 
     @Transactional
     public void applyApproval(TransactionApprovedPayload payload) {
-        BalanceLock lock = balanceLockRepository.findByTransactionId(payload.transactionId())
-                .orElseGet(() -> newLock(payload.transactionId(), payload.sourceAccountId(), BigDecimal.ZERO));
-
-        if (lock.isSettled()) {
+        Optional<BalanceLock> claimed = claimSettlement(payload.transactionId(), payload.sourceAccountId());
+        if (claimed.isEmpty()) {
             log.warn("Transaction {} was already settled, ignoring approval", payload.transactionId());
             return;
         }
-        lock.setSettled(true);
-        balanceLockRepository.save(lock);
 
-        BigDecimal reserved = lock.getAmount();
+        BigDecimal reserved = claimed.get().getAmount();
 
         if (!accountRepository.existsById(payload.destinationAccountId())) {
             releaseReserved(payload.sourceAccountId(), reserved);
@@ -81,17 +78,31 @@ public class BalanceLockService {
 
     @Transactional
     public void releaseOnDenial(TransactionDeniedPayload payload) {
-        BalanceLock lock = balanceLockRepository.findByTransactionId(payload.transactionId())
-                .orElseGet(() -> newLock(payload.transactionId(), payload.sourceAccountId(), BigDecimal.ZERO));
-
-        if (lock.isSettled()) {
+        Optional<BalanceLock> claimed = claimSettlement(payload.transactionId(), payload.sourceAccountId());
+        if (claimed.isEmpty()) {
             log.warn("Transaction {} was already settled, ignoring denial", payload.transactionId());
             return;
         }
-        lock.setSettled(true);
-        balanceLockRepository.save(lock);
 
-        releaseReserved(lock.getAccountId(), lock.getAmount());
+        releaseReserved(claimed.get().getAccountId(), claimed.get().getAmount());
+    }
+
+    /**
+     * Makes the caller the only one allowed to settle the transaction, even when outcomes for it are processed
+     * concurrently. Returns the lock to settle, or empty if the transaction was already settled.
+     */
+    private Optional<BalanceLock> claimSettlement(UUID transactionId, UUID accountId) {
+        Optional<BalanceLock> existing = balanceLockRepository.findByTransactionId(transactionId);
+        if (existing.isEmpty()) {
+            // The outcome arrived before transaction.created: record a settled lock with nothing reserved, so a
+            // late createLock reserves nothing. A concurrent insert fails on the unique transactionId, rolling
+            // back this whole settlement; the redelivered event then finds the lock settled.
+            BalanceLock settled = newLock(transactionId, accountId, BigDecimal.ZERO);
+            settled.setSettled(true);
+            balanceLockRepository.save(settled);
+            return Optional.of(settled);
+        }
+        return balanceLockRepository.claimSettlement(transactionId) == 1 ? existing : Optional.empty();
     }
 
     private void releaseReserved(UUID accountId, BigDecimal reserved) {
