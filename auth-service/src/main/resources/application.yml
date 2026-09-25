@@ -33,6 +33,11 @@ service-clients:
 refresh-token:
   expiration-ms: ${REFRESH_TOKEN_EXPIRATION_MS:604800000}
 
+springdoc:
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:true}
+  paths-to-exclude: /auth/service-token, /auth/users/lookup, /.well-known/**
+
 management:
   endpoints:
     web:

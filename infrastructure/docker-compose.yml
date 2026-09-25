@@ -80,6 +80,7 @@ services:
       postgres-auth:
         condition: service_healthy
     environment:
+      API_DOCS_ENABLED: "false"
       POSTGRES_AUTH_URL: jdbc:postgresql://postgres-auth:5432/auth_db
       POSTGRES_AUTH_USER: ${POSTGRES_AUTH_USER}
       POSTGRES_AUTH_PASSWORD: ${POSTGRES_AUTH_PASSWORD}
@@ -107,6 +108,7 @@ services:
       auth-service:
         condition: service_healthy
     environment:
+      API_DOCS_ENABLED: "false"
       POSTGRES_ACCOUNT_URL: jdbc:postgresql://postgres-account:5432/account_db
       POSTGRES_ACCOUNT_USER: ${POSTGRES_ACCOUNT_USER}
       POSTGRES_ACCOUNT_PASSWORD: ${POSTGRES_ACCOUNT_PASSWORD}
@@ -134,6 +136,7 @@ services:
       account-service:
         condition: service_healthy
     environment:
+      API_DOCS_ENABLED: "false"
       POSTGRES_TRANSACTION_URL: jdbc:postgresql://postgres-transaction:5432/transaction_db
       POSTGRES_TRANSACTION_USER: ${POSTGRES_TRANSACTION_USER}
       POSTGRES_TRANSACTION_PASSWORD: ${POSTGRES_TRANSACTION_PASSWORD}
@@ -178,6 +181,7 @@ services:
       account-service:
         condition: service_healthy
     environment:
+      API_DOCS_ENABLED: "false"
       MONGO_LEDGER_HOST: mongo-ledger
       MONGO_LEDGER_PORT: 27017
       MONGO_LEDGER_USER: ${MONGO_LEDGER_USER}
@@ -263,6 +267,7 @@ services:
       ledger-service:
         condition: service_healthy
     environment:
+      API_DOCS_ENABLED: "false"
       AUTH_SERVICE_URL: http://auth-service:8081
       ACCOUNT_SERVICE_URL: http://account-service:8082
       TRANSACTION_SERVICE_URL: http://transaction-service:8083

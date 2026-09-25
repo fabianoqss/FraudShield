@@ -27,6 +27,49 @@ spring:
               uri: ${LEDGER_SERVICE_URL:http://localhost:8086}
               predicates:
                 - Path=/ledger/**
+            # OpenAPI spec of the service; the path is fixed so this route reaches nothing else.
+            - id: auth-service-api-docs
+              uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api-docs/auth
+              filters:
+                - SetPath=/v3/api-docs
+            # OpenAPI spec of the service; the path is fixed so this route reaches nothing else.
+            - id: account-service-api-docs
+              uri: ${ACCOUNT_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api-docs/account
+              filters:
+                - SetPath=/v3/api-docs
+            # OpenAPI spec of the service; the path is fixed so this route reaches nothing else.
+            - id: transaction-service-api-docs
+              uri: ${TRANSACTION_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=/api-docs/transaction
+              filters:
+                - SetPath=/v3/api-docs
+            # OpenAPI spec of the service; the path is fixed so this route reaches nothing else.
+            - id: ledger-service-api-docs
+              uri: ${LEDGER_SERVICE_URL:http://localhost:8086}
+              predicates:
+                - Path=/api-docs/ledger
+              filters:
+                - SetPath=/v3/api-docs
+
+springdoc:
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:true}
+  swagger-ui:
+    enabled: ${API_DOCS_ENABLED:true}
+    urls:
+      - name: auth-service
+        url: /api-docs/auth
+      - name: account-service
+        url: /api-docs/account
+      - name: transaction-service
+        url: /api-docs/transaction
+      - name: ledger-service
+        url: /api-docs/ledger
 
 jwt:
   issuer: ${JWT_ISSUER:fraudshield-auth-service}
