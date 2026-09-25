@@ -185,7 +185,7 @@ export function TransferForm({ accountId }: { accountId: string }) {
     void send({
       sourceAccountId: accountId, lookupId: lookup.lookupId,
       amount: parseAmount(amount), type, deviceId: deviceId(),
-      ipAddress: null, idempotencyKey: crypto.randomUUID(),
+      idempotencyKey: crypto.randomUUID(),
     });
   }
   return (

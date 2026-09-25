@@ -31,7 +31,6 @@ export interface TransferRequest {
   amount: number;
   type: PaymentType;
   deviceId: string;
-  ipAddress: null;
   idempotencyKey: string;
 }
 export interface Page {
@@ -47,7 +46,9 @@ export interface LedgerEntry {
   id: string;
   transactionId: string;
   eventType: string;
-  eventPayload: Record<string, unknown>;
+  direction: "INCOMING" | "OUTGOING";
+  amount: number;
+  reason?: string;
   recordedAt: string;
 }
 export interface LedgerPage extends Page {

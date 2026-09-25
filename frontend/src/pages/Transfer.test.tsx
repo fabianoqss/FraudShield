@@ -31,7 +31,7 @@ it("looks up in the body, confirms recipient and sends only lookupId for the des
   expect(screen.getByText(/Você está enviando/)).toHaveTextContent(/100,50 para Ana Souza \(CPF \*\*\*.982.247-\*\*\)/);
   await user.click(screen.getByRole("button", { name: "Confirmar" }));
   expect(request.mock.calls[1]).toEqual(["/transactions", { method: "POST", body: {
-    sourceAccountId: "source", lookupId: "lookup-1", amount: 100.5, type: "PIX", deviceId: expect.any(String), ipAddress: null, idempotencyKey: expect.any(String),
+    sourceAccountId: "source", lookupId: "lookup-1", amount: 100.5, type: "PIX", deviceId: expect.any(String), idempotencyKey: expect.any(String),
   } }]);
   expect(await screen.findByText("APROVADA")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Ver detalhes" })).toHaveAttribute("href", "/extrato/tx");

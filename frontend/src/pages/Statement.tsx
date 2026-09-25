@@ -221,16 +221,9 @@ export function TransactionPage() {
               </h3>
               <p>{dateTime(entry.recordedAt)}</p>
               <p>
-                Pontuação de fraude:{" "}
-                {typeof entry.eventPayload.fraudScore === "number"
-                  ? new Intl.NumberFormat("pt-BR", {
-                      maximumFractionDigits: 4,
-                    }).format(entry.eventPayload.fraudScore)
-                  : "Não disponível neste evento"}
+                {entry.direction === "INCOMING" ? "Entrada" : "Saída"} · {currency(entry.amount)}
               </p>
-              {typeof entry.eventPayload.reason === "string" && (
-                <p>Motivo: {entry.eventPayload.reason}</p>
-              )}
+              {entry.reason && <p>Motivo: {entry.reason}</p>}
             </article>
           ))}
           {busy && <p role="status">Carregando eventos…</p>}

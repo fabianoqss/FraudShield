@@ -8,7 +8,10 @@ import { TransactionPage } from "./Statement";
 vi.mock("../auth/Accounts", () => ({
   useAccounts: () => ({ account: { id: "account" } }),
 }));
-it("finds the fraud score beyond the first ledger page and excludes other transactions", async () => {
+it.each([
+  ["OUTGOING", "Saída", "Risk detected"],
+  ["INCOMING", "Entrada", undefined],
+])("renders %s events beyond the first page without internal signals", async (direction, label, reason) => {
   vi.spyOn(api, "request").mockImplementation(async (path) => {
     if (path === "/transactions/selected")
       return {
@@ -17,7 +20,7 @@ it("finds the fraud score beyond the first ledger page and excludes other transa
         destinationAccountId: "destination",
         amount: 12,
         type: "PIX",
-        status: "APPROVED",
+        status: "DENIED",
         createdAt: "2026-09-23T12:00:00Z",
       };
     if (path.includes("page=0"))
@@ -27,7 +30,7 @@ it("finds the fraud score beyond the first ledger page and excludes other transa
             id: "unrelated",
             transactionId: "another",
             eventType: "TRANSACTION_DENIED",
-            eventPayload: { reason: "Must not appear" },
+            direction: "OUTGOING", amount: 12, reason: "Must not appear",
             recordedAt: "2026-09-23T12:00:00Z",
           },
         ],
@@ -38,8 +41,8 @@ it("finds the fraud score beyond the first ledger page and excludes other transa
         {
           id: "outcome",
           transactionId: "selected",
-          eventType: "TRANSACTION_APPROVED",
-          eventPayload: { fraudScore: 0.02 },
+          eventType: "TRANSACTION_DENIED",
+          direction, amount: 12, reason,
           recordedAt: "2026-09-23T12:00:00Z",
         },
       ],
@@ -59,9 +62,13 @@ it("finds the fraud score beyond the first ledger page and excludes other transa
   });
   expect(screen.queryByText(/Must not appear/)).not.toBeInTheDocument();
   await user.click(next);
-  expect(
-    await screen.findByText("Pontuação de fraude: 0,02"),
-  ).toBeInTheDocument();
+  expect(await screen.findByText(new RegExp(`${label} · R\\$\\s*12,00`))).toBeInTheDocument();
+  if (reason) {
+    expect(screen.getByText(`Motivo: ${reason}`)).toBeInTheDocument();
+  } else {
+    expect(screen.queryByText(/Motivo:/)).not.toBeInTheDocument();
+  }
+  expect(screen.queryByText(/Pontuação de fraude/)).not.toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: "Buscar nas próximas páginas" }),
   ).not.toBeInTheDocument();
