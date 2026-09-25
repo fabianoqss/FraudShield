@@ -4,9 +4,12 @@ import com.fraudetection.transaction_service.security.SecurityConfig;
 import com.fraudetection.transaction_service.security.TokenTypeAuthoritiesConverter;
 import com.fraudetection.transaction_service.dto.response.TransactionPageResponse;
 import com.fraudetection.transaction_service.services.TransactionService;
+import com.fraudetection.transaction_service.services.ClientIpResolver;
 import com.fraudetection.transaction_service.services.exceptions.AccountAccessDeniedException;
 import com.fraudetection.transaction_service.services.exceptions.AccountNotFoundException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -27,7 +30,7 @@ import org.springframework.http.MediaType;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(TransactionController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, ClientIpResolver.class})
 class TransactionControllerSecurityTests {
 
     private static final UUID ID = UUID.randomUUID();
@@ -78,7 +81,21 @@ class TransactionControllerSecurityTests {
                                 }
                                 """.formatted(ID, UUID.randomUUID())))
                 .andExpect(status().isCreated());
-        verify(transactionService).createTransaction(any());
+        verify(transactionService).createTransaction(any(), eq("127.0.0.1"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"null", "\"8.8.8.8\""})
+    void ignoresLegacyBodyIpAndUsesGatewayIp(String bodyIp) throws Exception {
+        mockMvc.perform(post("/transactions").with(userJwt(UUID.randomUUID()))
+                        .header("X-Forwarded-For", "1.1.1.1, 203.0.113.5")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"sourceAccountId":"%s", "lookupId":"%s", "amount":10,
+                                 "type":"PIX", "idempotencyKey":"legacy", "ipAddress":%s}
+                                """.formatted(ID, UUID.randomUUID(), bodyIp)))
+                .andExpect(status().isCreated());
+        verify(transactionService).createTransaction(any(), eq("203.0.113.5"));
     }
 
     @Test

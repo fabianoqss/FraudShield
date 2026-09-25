@@ -35,7 +35,7 @@ public class LedgerController implements LedgerApi {
 
         Page<LedgerEntry> result = ledgerQueryService.getEntriesForAccount(id, page, size);
         List<LedgerEntryResponse> entries = result.getContent().stream()
-                .map(LedgerEntryResponse::from)
+                .map(entry -> LedgerEntryResponse.from(entry, id))
                 .toList();
 
         return ResponseEntity.ok(new LedgerEntryPageResponse(

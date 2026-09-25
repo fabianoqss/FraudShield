@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Instant;
@@ -54,13 +55,17 @@ public class FeatureEngineerService {
     }
 
     boolean isForeignIp(String ipAddress) {
-        if (ipAddress == null || !IPV4_PATTERN.matcher(ipAddress).matches()) {
+        if (ipAddress == null || (!IPV4_PATTERN.matcher(ipAddress).matches()
+                && !ipAddress.contains(":"))) {
             return false;
         }
 
         try {
             InetAddress address = InetAddress.getByName(ipAddress);
-            return !(address.isSiteLocalAddress() || address.isLoopbackAddress());
+            boolean ipv6 = address instanceof Inet6Address;
+            boolean uniqueLocal = ipv6 && (address.getAddress()[0] & 0xfe) == 0xfc;
+            return !(address.isSiteLocalAddress() || address.isLoopbackAddress()
+                    || (ipv6 && address.isLinkLocalAddress()) || uniqueLocal);
         } catch (UnknownHostException e) {
             return false;
         }

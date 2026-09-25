@@ -18,10 +18,11 @@ public interface LedgerApi {
 
     @Operation(summary = "Get an account's ledger",
             description = "Every transfer event involving the account, newest first: `TRANSACTION_CREATED`, "
-                    + "`TRANSACTION_APPROVED`, `TRANSACTION_DENIED` or `TRANSACTION_FLAGGED`. Outcome events carry "
-                    + "`fraudScore` (0-1) and, for denied and flagged, a `reason`. Deposits are not recorded. "
+                    + "`TRANSACTION_APPROVED`, `TRANSACTION_DENIED` or `TRANSACTION_FLAGGED`. The sender sees the reason for "
+                    + "DENIED/FLAGGED; the recipient sees only the event, direction and amount. Deposits are not recorded. "
                     + "`page` starts at 0; `size` is clamped to 1..100.")
     @ApiResponse(responseCode = "200", description = "One page of ledger entries")
+    @ApiResponse(responseCode = "400", description = "Invalid account id or pagination parameter")
     @ApiResponse(responseCode = "401", description = "Missing or invalid bearer token")
     @ApiResponse(responseCode = "403", description = "The account belongs to another user")
     @ApiResponse(responseCode = "404", description = "Account not found")
