@@ -70,13 +70,17 @@ Every HTTP-facing service is an **OAuth2 Resource Server** and validates the JWT
 - **Local infrastructure:** every port published by `docker-compose` is bound to `127.0.0.1`.
 
 ### Known risks
-Six risks remain open. They are described in detail, with scenarios and fixes, in [`SECURITY.md`](./SECURITY.md#3-known-risks):
+Eleven risks remain open, on purpose for a demo. They are described in detail, with scenarios and fixes, in [`SECURITY.md`](./SECURITY.md#3-known-risks), which also lists the vulnerabilities already fixed and the engineering gaps (migrations, enum storage, indexes, timeouts, contract tests):
 - Kafka and Redis run without authentication (mitigated: bound to localhost; fix in Phase 3).
-- The public PIX deposit can credit any key, up to 10000.00 per deposit. This is intentional, to simulate incoming transfers.
+- The public PIX deposit can credit any registered key, up to 10000.00 per deposit. This is intentional, to simulate incoming transfers.
 - A failed settlement publishes no compensation event (data consistency, not exploitable).
-- Login throttling is in memory and per instance.
+- Login throttling is in memory and per instance (bounded, but not shared across replicas).
 - Access tokens stay valid until they expire (15 min), even after logout or a password change.
 - Tokens have no audience, so a token accepted by one service is accepted by all of them.
+- A transaction can be saved without its event being published, and a fraud decision can be lost after a partial failure (no outbox yet).
+- `FLAGGED` transactions are never resolved, so their funds stay reserved.
+- Ledger idempotency depends on a Redis key with a 24-hour TTL.
+- E-mail and CPF ownership are not verified before they become PIX keys.
 
 ---
 
