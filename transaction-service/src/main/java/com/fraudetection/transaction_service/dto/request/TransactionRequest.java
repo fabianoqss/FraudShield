@@ -2,6 +2,7 @@ package com.fraudetection.transaction_service.dto.request;
 
 import com.fraudetection.transaction_service.enums.PaymentType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -19,7 +20,9 @@ public record TransactionRequest(
         @NotNull UUID lookupId,
 
         @Schema(description = "Amount in BRL, up to 2 decimals.", example = "100.00")
-        @NotNull @Positive BigDecimal amount,
+        @NotNull @Positive
+        @Digits(integer = 15, fraction = 2, message = "Amount must have at most 15 integer digits and 2 decimal places")
+        BigDecimal amount,
 
         @NotNull PaymentType type,
 

@@ -12,7 +12,8 @@ transfer flow.
 
 - Every call goes to **api-gateway** at `http://localhost:8080`, which routes `/auth/**`, `/accounts/**`,
   `/transactions/**` and `/ledger/**`.
-- JSON in and out. Money is a JSON number with up to 2 decimals (`150.00`). IDs are UUID strings and
+- JSON in and out. Money is a JSON number with up to 2 decimals (`150.00`); more decimals are rejected
+  with `400`, never rounded. IDs are UUID strings and
   timestamps are ISO-8601 strings.
 - Authenticated routes need `Authorization: Bearer <accessToken>`.
 
@@ -66,5 +67,5 @@ carries a `Retry-After` header in seconds.
 
 While a transfer is being analyzed, its amount shows up in the balance as `lockedBalance`.
 
-`POST /accounts/deposit` simulates an incoming PIX from another bank. It is public, not rate limited and
-reveals whether a key is registered, so it exists for local testing only.
+`POST /accounts/deposit` simulates an incoming PIX from another bank. It is public, not rate limited,
+capped at 10000.00 per deposit and reveals whether a key is registered, so it exists for local testing only.
