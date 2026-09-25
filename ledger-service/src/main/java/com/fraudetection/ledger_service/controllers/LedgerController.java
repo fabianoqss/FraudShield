@@ -20,11 +20,12 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/ledger")
 @RequiredArgsConstructor
-public class LedgerController {
+public class LedgerController implements LedgerApi {
 
     private final AccountServiceClient accountServiceClient;
     private final LedgerQueryService ledgerQueryService;
 
+    @Override
     @GetMapping("/account/{id}")
     public ResponseEntity<LedgerEntryPageResponse> getAccountLedger(
             @PathVariable UUID id,

@@ -13,7 +13,6 @@ import com.fraudetection.auth_service.dto.response.UserResponse;
 import com.fraudetection.auth_service.services.AuthService;
 import com.fraudetection.auth_service.services.ServiceTokenService;
 import jakarta.validation.Valid;
-import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,33 +30,33 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-public class AuthController {
+public class AuthController implements AuthApi {
 
     private final AuthService authService;
     private final ServiceTokenService serviceTokenService;
 
-    @SecurityRequirements
+    @Override
     @PostMapping(value = "/register")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
         UserResponse response = authService.register(registerRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @SecurityRequirements
+    @Override
     @PostMapping(value = "/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         AuthResponse response = authService.login(loginRequest);
         return ResponseEntity.ok(response);
     }
 
-    @SecurityRequirements
+    @Override
     @PostMapping(value = "/refresh")
     public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse response = authService.refresh(request.refreshToken());
         return ResponseEntity.ok(response);
     }
 
-    @SecurityRequirements
+    @Override
     @PostMapping(value = "/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
         authService.logout(request.refreshToken());
@@ -69,6 +68,7 @@ public class AuthController {
         return ResponseEntity.ok(serviceTokenService.issue(request));
     }
 
+    @Override
     @PutMapping(value = "/password")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request, Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
