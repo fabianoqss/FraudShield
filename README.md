@@ -72,7 +72,7 @@ Every HTTP-facing service is an **OAuth2 Resource Server** and validates the JWT
 ### Known risks
 Six risks remain open. They are described in detail, with scenarios and fixes, in [`SECURITY.md`](./SECURITY.md#3-known-risks):
 - Kafka and Redis run without authentication (mitigated: bound to localhost; fix in Phase 3).
-- The public PIX deposit can credit any key. This is intentional, to simulate incoming transfers.
+- The public PIX deposit can credit any key, up to 10000.00 per deposit. This is intentional, to simulate incoming transfers.
 - A failed settlement publishes no compensation event (data consistency, not exploitable).
 - Login throttling is in memory and per instance.
 - Access tokens stay valid until they expire (15 min), even after logout or a password change.

@@ -49,10 +49,11 @@ public interface AccountApi {
     @SecurityRequirements // public: simulates an incoming PIX transfer
     @Operation(summary = "Deposit into an account by PIX key",
             description = "Simulates a PIX transfer arriving from another bank. Public, no token needed. "
-                    + "The response only carries the receiver's name and the amount.")
+                    + "Each deposit is capped at 10000.00. The response only carries the receiver's name and the "
+                    + "amount.")
     @ApiResponse(responseCode = "200", description = "Amount credited")
-    @ApiResponse(responseCode = "400", description = "Validation failed, or the key is not a CPF (11 digits), "
-            + "an e-mail or a random key (UUID)")
+    @ApiResponse(responseCode = "400", description = "Validation failed (including more than 2 decimals or more "
+            + "than 10000.00), or the key is not a CPF (11 digits), an e-mail or a random key (UUID)")
     @ApiResponse(responseCode = "404", description = "No account has this PIX key")
     ResponseEntity<DepositResponse> deposit(PixDepositRequest request);
 }
