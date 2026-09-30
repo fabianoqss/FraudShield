@@ -3,7 +3,7 @@ package com.fraudetection.fraud_detection_service.services;
 import com.fraudetection.fraud_detection_service.dto.event.TransactionCreatedPayload;
 import com.fraudetection.fraud_detection_service.dto.request.MlPredictRequest;
 import com.fraudetection.fraud_detection_service.repositories.FraudAnalysisRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -11,11 +11,12 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.regex.Pattern;
 
 @Service
-@RequiredArgsConstructor
 public class FeatureEngineerService {
 
     private static final Pattern IPV4_PATTERN = Pattern.compile(
@@ -23,6 +24,13 @@ public class FeatureEngineerService {
     );
 
     private final FraudAnalysisRepository fraudAnalysisRepository;
+    private final ZoneId businessZone;
+
+    public FeatureEngineerService(FraudAnalysisRepository fraudAnalysisRepository,
+                                  @Value("${fraud.features.time-zone}") ZoneId businessZone) {
+        this.fraudAnalysisRepository = fraudAnalysisRepository;
+        this.businessZone = businessZone;
+    }
 
     public MlPredictRequest buildFeatures(TransactionCreatedPayload payload) {
         Instant now = Instant.now();
@@ -41,10 +49,13 @@ public class FeatureEngineerService {
         BigDecimal avgAmountLast30Days = fraudAnalysisRepository.findAverageAmountBySourceAccountIdSince(
                 payload.sourceAccountId(), now.minus(30, ChronoUnit.DAYS));
 
+        // Hour and weekday describe the customer's wall clock, not the server's (UTC in Docker).
+        ZonedDateTime createdAt = payload.createdAt().atZone(businessZone);
+
         return new MlPredictRequest(
                 payload.amount(),
-                payload.createdAt().getHour(),
-                payload.createdAt().getDayOfWeek().getValue(),
+                createdAt.getHour(),
+                createdAt.getDayOfWeek().getValue(),
                 payload.type(),
                 isNewDevice,
                 isForeignIp,

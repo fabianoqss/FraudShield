@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -38,7 +38,7 @@ public class Transaction {
     @Column(nullable = false, unique = true)
     private String idempotencyKey;
 
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     private String deviceId;
 

@@ -1,10 +1,16 @@
 package com.fraudetection.fraud_detection_service.services;
 
+import com.fraudetection.fraud_detection_service.dto.event.TransactionCreatedPayload;
+import com.fraudetection.fraud_detection_service.dto.request.MlPredictRequest;
 import com.fraudetection.fraud_detection_service.repositories.FraudAnalysisRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.time.ZoneId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -15,7 +21,7 @@ class FeatureEngineerServiceTest {
     @BeforeEach
     void setUp() {
         FraudAnalysisRepository fraudAnalysisRepository = Mockito.mock(FraudAnalysisRepository.class);
-        featureEngineerService = new FeatureEngineerService(fraudAnalysisRepository);
+        featureEngineerService = new FeatureEngineerService(fraudAnalysisRepository, ZoneId.of("America/Sao_Paulo"));
     }
 
     @ParameterizedTest
@@ -43,5 +49,22 @@ class FeatureEngineerServiceTest {
     }, nullValues = "null")
     void isForeignIp(String ipAddress, boolean expected) {
         assertEquals(expected, featureEngineerService.isForeignIp(ipAddress));
+    }
+
+    @Test
+    void timeFeaturesUseTheBusinessZoneNotUtc() {
+        // 00:30 UTC on Wednesday is 21:30 on Tuesday in São Paulo, where the customer made the transfer.
+        TransactionCreatedPayload payload = JsonMapper.builder().build().readValue("""
+                {"transactionId":"56c0f553-c6c7-4fc7-9bbc-82c7a608ba4c",
+                 "sourceAccountId":"8c7cd4d6-57ca-41e1-8b3e-71c57dfab297",
+                 "destinationAccountId":"e10f6f6b-0269-43a9-bc33-2ff54789ccff",
+                 "amount":150.00,"type":"PIX","deviceId":"device","ipAddress":"203.0.113.5",
+                 "createdAt":"2026-09-30T00:30:00Z"}
+                """, TransactionCreatedPayload.class);
+
+        MlPredictRequest features = featureEngineerService.buildFeatures(payload);
+
+        assertEquals(21, features.hourOfDay());
+        assertEquals(2, features.dayOfWeek());
     }
 }

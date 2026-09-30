@@ -19,6 +19,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        # Timestamps are stored in UTC whatever the JVM zone is (UTC in Docker, local in an IDE).
+        jdbc.time_zone: UTC
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:

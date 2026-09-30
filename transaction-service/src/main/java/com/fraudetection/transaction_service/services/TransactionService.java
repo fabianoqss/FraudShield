@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Slf4j
@@ -61,7 +61,7 @@ public class TransactionService {
         transaction.setIdempotencyKey(request.idempotencyKey());
         transaction.setDeviceId(request.deviceId());
         transaction.setIpAddress(clientIp);
-        transaction.setCreatedAt(LocalDateTime.now());
+        transaction.setCreatedAt(Instant.now());
 
         Transaction saved = transactionRepository.save(transaction);
         transactionCreatedProducer.publish(saved);
