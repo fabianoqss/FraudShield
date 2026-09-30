@@ -4,7 +4,7 @@ import com.fraudetection.transaction_service.enums.PaymentStatus;
 import com.fraudetection.transaction_service.enums.PaymentType;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record TransactionResponse(
@@ -14,7 +14,7 @@ public record TransactionResponse(
         BigDecimal amount,
         PaymentType type,
         PaymentStatus status,
-        LocalDateTime createdAt
+        Instant createdAt
 
 ) {
 }

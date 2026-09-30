@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -157,6 +158,18 @@ class TransactionServiceTest {
         inOrder.verify(transactionRepository).save(captor.capture());
         assertThat(captor.getValue().getIpAddress()).isEqualTo("203.0.113.5");
         inOrder.verify(producer).publish(captor.getValue());
+    }
+
+    @Test
+    void createExposesTheCreationTimeAsAnUtcInstant() {
+        when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(new BigDecimal("10"));
+        when(accountServiceClient.resolvePixLookup(lookupId)).thenReturn(destinationAccountId);
+
+        var response = transactionService.createTransaction(request(BigDecimal.TEN), "203.0.113.5");
+
+        // Clients and the fraud features read this field; without an offset they would guess the zone.
+        String createdAt = JsonMapper.builder().build().valueToTree(response).get("createdAt").asString();
+        assertThat(createdAt).endsWith("Z");
     }
 
     @Test

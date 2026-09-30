@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fraudetection.fraud_detection_service.enums.PaymentType;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -16,6 +16,6 @@ public record TransactionCreatedPayload(
         PaymentType type,
         String deviceId,
         String ipAddress,
-        LocalDateTime createdAt
+        Instant createdAt
 ) {
 }

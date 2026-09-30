@@ -210,3 +210,4 @@ The docs are on by default for local runs and off in `docker-compose` (`API_DOCS
 | `AUTH_JWKS_URI` | gateway, account, transaction, ledger | Where to fetch the public keys |
 | `SERVICE_CLIENT_ACCOUNT_SECRET` | auth-service, account-service | Client secret for `account-service`'s service token |
 | `API_DOCS_ENABLED` | gateway, auth, account, transaction, ledger | Serve the OpenAPI specs and the Swagger UI (default `true`; `false` in `docker-compose`) |
+| `FRAUD_FEATURES_TIME_ZONE` | fraud-detection-service | Zone for the hour-of-day and day-of-week fraud features (default `America/Sao_Paulo`); timestamps travel in UTC |
