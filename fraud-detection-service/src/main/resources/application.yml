@@ -41,6 +41,11 @@ spring:
 server:
   port: 8084
 
+fraud:
+  features:
+    # Zone used for the hour-of-day and day-of-week features; transaction timestamps arrive in UTC.
+    time-zone: ${FRAUD_FEATURES_TIME_ZONE:America/Sao_Paulo}
+
 management:
   endpoints:
     web:

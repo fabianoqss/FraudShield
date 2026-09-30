@@ -3,7 +3,7 @@ package com.fraudetection.transaction_service.dto.event;
 import com.fraudetection.transaction_service.enums.PaymentType;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record TransactionCreatedPayload(
@@ -15,6 +15,6 @@ public record TransactionCreatedPayload(
         String deviceId,
         String ipAddress,
         String idempotencyKey,
-        LocalDateTime createdAt
+        Instant createdAt
 ) {
 }
