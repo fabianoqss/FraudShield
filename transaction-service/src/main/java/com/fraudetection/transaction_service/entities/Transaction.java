@@ -27,6 +27,8 @@ public class Transaction {
 
     private UUID destinationAccountId;
 
+    // BRL, two decimals: the API rejects anything else (TransactionRequest), so nothing is rounded here.
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
     private PaymentType type;

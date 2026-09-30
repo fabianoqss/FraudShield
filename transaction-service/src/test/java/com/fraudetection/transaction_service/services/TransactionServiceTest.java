@@ -100,7 +100,7 @@ class TransactionServiceTest {
     void createRejectsAmountAboveAvailableBalance() {
         when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(new BigDecimal("50.00"));
 
-        assertThatThrownBy(() -> transactionService.createTransaction(request(new BigDecimal("50.01"))))
+        assertThatThrownBy(() -> transactionService.createTransaction(request(new BigDecimal("50.01")), "203.0.113.5"))
                 .isInstanceOf(InsufficientFundsException.class);
         verify(transactionRepository, never()).save(any());
         verify(producer, never()).publish(any());
@@ -111,7 +111,7 @@ class TransactionServiceTest {
         when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(new BigDecimal("100"));
         when(accountServiceClient.resolvePixLookup(lookupId)).thenThrow(new InvalidPixLookupException());
 
-        assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN)))
+        assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN), "203.0.113.5"))
                 .isInstanceOf(InvalidPixLookupException.class);
         verify(transactionRepository, never()).save(any());
         verify(producer, never()).publish(any());
@@ -122,7 +122,7 @@ class TransactionServiceTest {
         when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(new BigDecimal("100"));
         when(accountServiceClient.resolvePixLookup(lookupId)).thenReturn(sourceAccountId);
 
-        assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN)))
+        assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN), "203.0.113.5"))
                 .isInstanceOf(SameAccountTransferException.class);
         verify(transactionRepository, never()).save(any());
     }
@@ -132,7 +132,7 @@ class TransactionServiceTest {
         when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(new BigDecimal("100"));
         when(accountServiceClient.resolvePixLookup(lookupId)).thenReturn(destinationAccountId);
 
-        assertThat(transactionService.createTransaction(request(BigDecimal.TEN)).destinationAccountId())
+        assertThat(transactionService.createTransaction(request(BigDecimal.TEN), "203.0.113.5").destinationAccountId())
                 .isEqualTo(destinationAccountId);
     }
 
@@ -140,7 +140,7 @@ class TransactionServiceTest {
     void createDoesNotResolveTheLookupWhenFundsAreInsufficient() {
         when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(BigDecimal.ONE);
 
-        assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN)))
+        assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN), "203.0.113.5"))
                 .isInstanceOf(InsufficientFundsException.class);
         verify(accountServiceClient, never()).resolvePixLookup(any());
     }
@@ -150,11 +150,13 @@ class TransactionServiceTest {
         when(accountServiceClient.getOwnedAvailableBalance(sourceAccountId)).thenReturn(new BigDecimal("10"));
         when(accountServiceClient.resolvePixLookup(lookupId)).thenReturn(destinationAccountId);
 
-        transactionService.createTransaction(request(BigDecimal.TEN));
+        transactionService.createTransaction(request(BigDecimal.TEN), "203.0.113.5");
 
         InOrder inOrder = inOrder(transactionRepository, producer);
-        inOrder.verify(transactionRepository).save(any());
-        inOrder.verify(producer).publish(any());
+        ArgumentCaptor<Transaction> captor = ArgumentCaptor.forClass(Transaction.class);
+        inOrder.verify(transactionRepository).save(captor.capture());
+        assertThat(captor.getValue().getIpAddress()).isEqualTo("203.0.113.5");
+        inOrder.verify(producer).publish(captor.getValue());
     }
 
     @Test
@@ -163,7 +165,7 @@ class TransactionServiceTest {
         when(accountServiceClient.resolvePixLookup(lookupId)).thenReturn(destinationAccountId);
         when(transactionRepository.save(any())).thenThrow(new DataIntegrityViolationException("duplicate key"));
 
-        assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN)))
+        assertThatThrownBy(() -> transactionService.createTransaction(request(BigDecimal.TEN), "203.0.113.5"))
                 .isInstanceOf(DataIntegrityViolationException.class);
         verify(producer, never()).publish(any());
     }
@@ -231,6 +233,6 @@ class TransactionServiceTest {
 
     private TransactionRequest request(BigDecimal amount) {
         return new TransactionRequest(sourceAccountId, lookupId, amount, PaymentType.PIX,
-                "device", "8.8.8.8", UUID.randomUUID().toString());
+                "device", UUID.randomUUID().toString());
     }
 }

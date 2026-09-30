@@ -49,6 +49,17 @@ class LoginAttemptServiceTest {
         assertThat(service.isBlocked("ana@example.com")).isFalse();
     }
 
+    @Test
+    void tracksAtMostTheConfiguredNumberOfEmails() {
+        LoginAttemptService bounded = new LoginAttemptService(3, Duration.ofMinutes(15), clock, 2);
+
+        bounded.recordFailure("a@example.com");
+        bounded.recordFailure("b@example.com");
+        bounded.recordFailure("c@example.com");
+
+        assertThat(bounded.trackedKeys()).isLessThanOrEqualTo(2);
+    }
+
     private static final class MutableClock extends Clock {
         private Instant now;
 

@@ -23,11 +23,12 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/accounts")
 @RequiredArgsConstructor
-public class PixKeyController {
+public class PixKeyController implements PixKeyApi {
 
     private final PixKeyService pixKeyService;
     private final PixLookupService pixLookupService;
 
+    @Override
     @PostMapping("/{accountId}/pix-keys")
     public ResponseEntity<PixKeyResponse> register(@PathVariable UUID accountId,
                                                    @Valid @RequestBody RegisterPixKeyRequest request,
@@ -36,11 +37,13 @@ public class PixKeyController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Override
     @GetMapping("/{accountId}/pix-keys")
     public ResponseEntity<List<PixKeyResponse>> list(@PathVariable UUID accountId, Authentication authentication) {
         return ResponseEntity.ok(pixKeyService.list(accountId, userId(authentication)));
     }
 
+    @Override
     @DeleteMapping("/{accountId}/pix-keys/{keyId}")
     public ResponseEntity<Void> delete(@PathVariable UUID accountId, @PathVariable UUID keyId,
                                        Authentication authentication) {
@@ -48,6 +51,7 @@ public class PixKeyController {
         return ResponseEntity.noContent().build();
     }
 
+    @Override
     @PostMapping("/pix-keys/lookup")
     public ResponseEntity<PixKeyLookupResponse> lookup(@Valid @RequestBody PixKeyLookupRequest request,
                                                        Authentication authentication) {

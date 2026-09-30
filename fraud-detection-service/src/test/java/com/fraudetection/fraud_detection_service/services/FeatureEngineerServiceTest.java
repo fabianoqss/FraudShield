@@ -30,7 +30,16 @@ class FeatureEngineerServiceTest {
             "172.15.0.1, true",
             "172.32.0.1, true",
             "172.217.0.1, true",
-            "8.8.8.8, true"
+            "8.8.8.8, true",
+            "::1, false",
+            "fec0::1, false",
+            "fe80::1, false",
+            "fc00::1, false",
+            "fdff:ffff::1, false",
+            "2001:4860:4860::8888, true",
+            "fbff::1, true",
+            "fe00::1, true",
+            "not:a:valid:ip, false"
     }, nullValues = "null")
     void isForeignIp(String ipAddress, boolean expected) {
         assertEquals(expected, featureEngineerService.isForeignIp(ipAddress));

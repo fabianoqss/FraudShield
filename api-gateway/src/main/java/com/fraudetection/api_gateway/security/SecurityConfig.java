@@ -31,6 +31,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/service-token", "/auth/users/lookup", "/internal/**").denyAll()
                         .requestMatchers("/auth/login", "/auth/register", "/auth/refresh", "/auth/logout", "/accounts/deposit", "/error", "/actuator/**").permitAll()
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/swagger-config", "/api-docs/*").permitAll()
                         .anyRequest().hasRole(TokenTypeAuthoritiesConverter.USER_ROLE)
                 )
                 .oauth2ResourceServer(resourceServer -> resourceServer.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));

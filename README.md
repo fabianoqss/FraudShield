@@ -70,13 +70,17 @@ Every HTTP-facing service is an **OAuth2 Resource Server** and validates the JWT
 - **Local infrastructure:** every port published by `docker-compose` is bound to `127.0.0.1`.
 
 ### Known risks
-Six risks remain open. They are described in detail, with scenarios and fixes, in [`SECURITY.md`](./SECURITY.md#3-known-risks):
+Eleven risks remain open, on purpose for a demo. They are described in detail, with scenarios and fixes, in [`SECURITY.md`](./SECURITY.md#3-known-risks), which also lists the vulnerabilities already fixed and the engineering gaps (migrations, enum storage, indexes, timeouts, contract tests):
 - Kafka and Redis run without authentication (mitigated: bound to localhost; fix in Phase 3).
-- The public PIX deposit can credit any key. This is intentional, to simulate incoming transfers.
+- The public PIX deposit can credit any registered key, up to 10000.00 per deposit. This is intentional, to simulate incoming transfers.
 - A failed settlement publishes no compensation event (data consistency, not exploitable).
-- Login throttling is in memory and per instance.
+- Login throttling is in memory and per instance (bounded, but not shared across replicas).
 - Access tokens stay valid until they expire (15 min), even after logout or a password change.
 - Tokens have no audience, so a token accepted by one service is accepted by all of them.
+- A transaction can be saved without its event being published, and a fraud decision can be lost after a partial failure (no outbox yet).
+- `FLAGGED` transactions are never resolved, so their funds stay reserved.
+- Ledger idempotency depends on a Redis key with a 24-hour TTL.
+- E-mail and CPF ownership are not verified before they become PIX keys.
 
 ---
 
@@ -84,7 +88,7 @@ Six risks remain open. They are described in detail, with scenarios and fixes, i
 
 | Layer | Technology |
 |---|---|
-| Backend | Java 21, Spring Boot 3 |
+| Backend | Java 21, Spring Boot 4.1 |
 | Gateway | Spring Cloud Gateway |
 | Security | Spring Security, JWT |
 | Messaging | Apache Kafka |
@@ -118,8 +122,8 @@ If `JWT_PRIVATE_KEY` is left empty, `auth-service` generates an ephemeral key on
 `.env` lives at the repo root but Docker Compose runs from `infrastructure/`, so point it at the env file explicitly with `--env-file`:
 ```bash
 cd infrastructure
-docker-compose --env-file ../.env up -d
-docker-compose ps   # all containers should show "Up (healthy)"
+docker compose --env-file ../.env up -d
+docker compose ps   # all containers should show "Up (healthy)"
 ```
 
 ### 3. Run a service
@@ -134,7 +138,7 @@ Each service is a standalone Spring Boot (or FastAPI) app and can be run indepen
 To run the whole stack in Docker instead:
 ```bash
 cd infrastructure
-docker-compose --env-file ../.env --profile services up -d --build
+docker compose --env-file ../.env --profile services up -d --build
 ```
 
 ### 4. Run the tests
@@ -142,7 +146,7 @@ docker-compose --env-file ../.env --profile services up -d --build
 cd auth-service
 ./mvnw test
 ```
-The `@SpringBootTest` context-load tests need the service's database running; the security, client and unit tests do not. `ledger-service` and `notification-service` start their own MongoDB/Kafka/Redis with Testcontainers, so they only need Docker.
+No local infrastructure or `.env` is needed: the `@SpringBootTest` tests (context loads, OpenAPI specs, integration tests) start their own PostgreSQL, MongoDB, Kafka and Redis with Testcontainers, so they only need Docker running. The security, client and unit tests need nothing at all. CI (GitHub Actions) runs the suites of the services a pull request touches.
 
 ---
 
@@ -161,6 +165,11 @@ FraudShield/
 └── infrastructure/            # docker-compose, Prometheus, Grafana, OpenTelemetry Collector, Tempo
 ```
 
+### 5. API documentation (Swagger UI)
+With the gateway and the services running, open **http://localhost:8080/swagger-ui.html** and pick a service in the top-right selector. Each service publishes its OpenAPI spec at `/v3/api-docs` (springdoc); the gateway serves them at `/api-docs/{auth,account,transaction,ledger}` and hosts the only Swagger UI. "Try it out" calls go through the gateway: log in with `POST /auth/login`, then paste the `accessToken` into **Authorize**. Internal routes (`/internal/**`, `/auth/service-token`, `/auth/users/lookup`) are left out of the specs.
+
+The docs are on by default for local runs and off in `docker-compose` (`API_DOCS_ENABLED=false`), since a published spec maps the whole API for an attacker.
+
 ---
 
 ## Status
@@ -175,11 +184,12 @@ FraudShield/
 - [x] `transaction-service` consuming outcome events to update the transaction status
 - [ ] Handling of `transaction.flagged` (balance lock release) and a manual-review endpoint
 - [x] Ownership check on `GET /transactions/{id}`, balance checks and single settlement in the saga
-- [ ] Automated tests beyond security and unit level — Testcontainers integration tests exist for the `ledger-service` and `notification-service` consumers; the other services and the end-to-end saga are not covered yet
+- [ ] Automated tests beyond security and unit level — every service boots its context against Testcontainers, and there are integration tests for the PIX key registry and the `ledger-service`/`notification-service` consumers; the end-to-end saga is not covered yet
 
 **Phase 2 — ML and supporting services**
 - [x] `ledger-service` — MongoDB append-only log, 4 Kafka consumers, Redis idempotency, REST API
 - [x] `api-gateway` — routes `/auth/**`, `/accounts/**`, `/transactions/**`, `/ledger/**`
+- [x] OpenAPI specs per service (springdoc), aggregated in one Swagger UI at the gateway
 - [x] `ml-model-service` — `POST /predict` with the same contract `fraud-detection-service` sends, RandomForest trained on synthetic data (features shared by training and serving), `/health`, Prometheus `/metrics`. The earlier PaySim baseline is kept under `research/paysim/` for reference; its features do not match the serving contract.
 - [x] `notification-service` — consumes `approved/flagged/denied`, Redis idempotency, DLT for malformed messages (notifications are logged, no e-mail/SMS yet)
 
@@ -199,3 +209,4 @@ FraudShield/
 | `JWT_EXPIRATION_MS` | auth-service | Access-token lifetime (default 15 min) |
 | `AUTH_JWKS_URI` | gateway, account, transaction, ledger | Where to fetch the public keys |
 | `SERVICE_CLIENT_ACCOUNT_SECRET` | auth-service, account-service | Client secret for `account-service`'s service token |
+| `API_DOCS_ENABLED` | gateway, auth, account, transaction, ledger | Serve the OpenAPI specs and the Swagger UI (default `true`; `false` in `docker-compose`) |

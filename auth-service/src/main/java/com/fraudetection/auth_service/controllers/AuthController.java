@@ -30,29 +30,33 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-public class AuthController {
+public class AuthController implements AuthApi {
 
     private final AuthService authService;
     private final ServiceTokenService serviceTokenService;
 
+    @Override
     @PostMapping(value = "/register")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
         UserResponse response = authService.register(registerRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Override
     @PostMapping(value = "/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         AuthResponse response = authService.login(loginRequest);
         return ResponseEntity.ok(response);
     }
 
+    @Override
     @PostMapping(value = "/refresh")
     public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse response = authService.refresh(request.refreshToken());
         return ResponseEntity.ok(response);
     }
 
+    @Override
     @PostMapping(value = "/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
         authService.logout(request.refreshToken());
@@ -64,6 +68,7 @@ public class AuthController {
         return ResponseEntity.ok(serviceTokenService.issue(request));
     }
 
+    @Override
     @PutMapping(value = "/password")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request, Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());

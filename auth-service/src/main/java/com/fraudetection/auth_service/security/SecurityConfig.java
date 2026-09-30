@@ -63,7 +63,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/register", "/auth/login", "/auth/refresh", "/auth/logout", "/auth/service-token",
-                                "/.well-known/jwks.json", "/error", "/actuator/**").permitAll()
+                                "/.well-known/jwks.json", "/error", "/actuator/**", "/v3/api-docs", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/users/lookup").hasAuthority("SCOPE_users:lookup")
                         .anyRequest().hasRole(TokenTypeAuthoritiesConverter.USER_ROLE)
                 )

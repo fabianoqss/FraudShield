@@ -41,6 +41,10 @@ spring:
 server:
   port: 8086
 
+springdoc:
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:true}
+
 management:
   endpoints:
     web:

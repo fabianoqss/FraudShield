@@ -43,6 +43,13 @@ class PixKeyParserTest {
     }
 
     @Test
+    void rejectionTellsWhichFormatsAreAcceptedWithoutEchoingTheKey() {
+        assertThatThrownBy(() -> PixKeyParser.parse("ana-secret-typo"))
+                .hasMessage("Invalid PIX key format. Use a CPF (11 digits), an e-mail or a random key (UUID).")
+                .message().doesNotContain("ana-secret-typo");
+    }
+
+    @Test
     void nullIsRejected() {
         assertThatThrownBy(() -> PixKeyParser.parse(null)).isInstanceOf(InvalidPixKeyFormatException.class);
     }

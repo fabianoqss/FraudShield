@@ -62,6 +62,7 @@ class BalanceLockServiceTest {
     @Test
     void approvalWithReservedFundsDebitsAndCredits() {
         when(balanceLockRepository.findByTransactionId(transactionId)).thenReturn(Optional.of(lock(AMOUNT, false)));
+        when(balanceLockRepository.claimSettlement(transactionId)).thenReturn(1);
         when(accountRepository.existsById(destination)).thenReturn(true);
 
         service.applyApproval(approved());
@@ -73,6 +74,7 @@ class BalanceLockServiceTest {
     @Test
     void approvalWithoutReservationNeverOverdraws() {
         when(balanceLockRepository.findByTransactionId(transactionId)).thenReturn(Optional.of(lock(BigDecimal.ZERO, false)));
+        when(balanceLockRepository.claimSettlement(transactionId)).thenReturn(1);
         when(accountRepository.existsById(destination)).thenReturn(true);
         when(accountRepository.debitIfAvailable(source, AMOUNT)).thenReturn(0);
 
@@ -110,6 +112,7 @@ class BalanceLockServiceTest {
     @Test
     void approvalToMissingDestinationReleasesFundsWithoutDebiting() {
         when(balanceLockRepository.findByTransactionId(transactionId)).thenReturn(Optional.of(lock(AMOUNT, false)));
+        when(balanceLockRepository.claimSettlement(transactionId)).thenReturn(1);
         when(accountRepository.existsById(destination)).thenReturn(false);
 
         service.applyApproval(approved());
@@ -121,14 +124,14 @@ class BalanceLockServiceTest {
 
     @Test
     void denialReleasesReservedFundsOnce() {
-        BalanceLock lock = lock(AMOUNT, false);
-        when(balanceLockRepository.findByTransactionId(transactionId)).thenReturn(Optional.of(lock));
+        when(balanceLockRepository.findByTransactionId(transactionId)).thenReturn(Optional.of(lock(AMOUNT, false)));
+        // The first claim wins; the second finds the lock already settled.
+        when(balanceLockRepository.claimSettlement(transactionId)).thenReturn(1, 0);
 
         service.releaseOnDenial(new TransactionDeniedPayload(transactionId, source));
         service.releaseOnDenial(new TransactionDeniedPayload(transactionId, source));
 
         verify(accountRepository).decreaseLockedBalance(source, AMOUNT);
-        assertThat(lock.isSettled()).isTrue();
     }
 
     private TransactionApprovedPayload approved() {

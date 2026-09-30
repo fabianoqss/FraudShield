@@ -73,7 +73,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/error", "/actuator/**").permitAll()
+                        .requestMatchers("/error", "/actuator/**", "/v3/api-docs", "/v3/api-docs/**").permitAll()
                         .anyRequest().hasRole(TokenTypeAuthoritiesConverter.USER_ROLE)
                 )
                 .exceptionHandling(handling -> handling
