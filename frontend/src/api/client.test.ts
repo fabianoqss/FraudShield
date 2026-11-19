@@ -269,7 +269,7 @@ it("treats a broken response body as an uncertain network outcome", async () => 
   );
   await expect(
     client.request("/accounts/deposit", { public: true }),
-  ).rejects.toThrow("Não foi possível confirmar");
+  ).rejects.toThrow("Couldn't confirm the response");
 });
 
 it("exposes Retry-After on API errors for PIX lookup throttling", async () => {

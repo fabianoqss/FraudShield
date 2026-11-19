@@ -19,16 +19,16 @@ it("shows the 15-minute lockout message after HTTP 429", async () => {
       <AuthPage />
     </MemoryRouter>,
   );
-  await user.type(screen.getByLabelText("E-mail"), "ana@example.com");
-  await user.type(screen.getByLabelText("Senha"), "WrongPassword!");
-  await user.click(screen.getByRole("button", { name: "Entrar" }));
+  await user.type(screen.getByLabelText("Email"), "ana@example.com");
+  await user.type(screen.getByLabelText("Password"), "WrongPassword!");
+  await user.click(screen.getByRole("button", { name: "Sign in" }));
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Aguarde 15 minutos",
+    "Wait 15 minutes",
   );
 });
 it("associates server validation errors with registration fields", async () => {
   vi.spyOn(api, "request").mockRejectedValue(
-    new ApiError(400, "Dados inválidos", { cpf: "CPF inválido" }),
+    new ApiError(400, "Invalid input", { cpf: "Invalid CPF" }),
   );
   const user = userEvent.setup();
   render(
@@ -36,15 +36,15 @@ it("associates server validation errors with registration fields", async () => {
       <AuthPage register />
     </MemoryRouter>,
   );
-  await user.type(screen.getByLabelText("Nome completo"), "Ana Souza");
-  await user.type(screen.getByLabelText("E-mail"), "ana@example.com");
+  await user.type(screen.getByLabelText("Full name"), "Ana Souza");
+  await user.type(screen.getByLabelText("Email"), "ana@example.com");
   await user.type(screen.getByLabelText("CPF"), "11111111111");
-  await user.type(screen.getByLabelText("Data de nascimento"), "1990-05-20");
-  await user.type(screen.getByLabelText("Senha"), "Senha@123");
-  await user.click(screen.getByRole("button", { name: "Cadastrar" }));
-  expect(await screen.findByText("CPF inválido")).toBeVisible();
+  await user.type(screen.getByLabelText("Date of birth"), "1990-05-20");
+  await user.type(screen.getByLabelText("Password"), "Password@123");
+  await user.click(screen.getByRole("button", { name: "Register" }));
+  expect(await screen.findByText("Invalid CPF")).toBeVisible();
   expect(screen.getByLabelText("CPF")).toHaveAccessibleDescription(
-    "CPF inválido",
+    "Invalid CPF",
   );
   expect(screen.getByLabelText("CPF")).toHaveAttribute("aria-invalid", "true");
 });
@@ -53,13 +53,13 @@ it("logs out only after the server confirms a password change", async () => {
   const logout = vi.spyOn(api, "logout").mockResolvedValue();
   const user = userEvent.setup();
   render(<PasswordPage />);
-  await user.type(screen.getByLabelText("Senha atual"), "Senha@123");
-  await user.type(screen.getByLabelText("Nova senha"), "NovaSenha@123");
+  await user.type(screen.getByLabelText("Current password"), "Password@123");
+  await user.type(screen.getByLabelText("New password"), "NewPassword@123");
   await user.type(
-    screen.getByLabelText("Confirme a nova senha"),
-    "NovaSenha@123",
+    screen.getByLabelText("Confirm new password"),
+    "NewPassword@123",
   );
-  await user.click(screen.getByRole("button", { name: "Alterar senha" }));
+  await user.click(screen.getByRole("button", { name: "Change password" }));
   expect(request).toHaveBeenCalledWith(
     "/auth/password",
     expect.objectContaining({ method: "PUT" }),

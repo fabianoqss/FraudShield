@@ -15,6 +15,11 @@ export interface Balance {
   availableBalance: number;
 }
 export type PaymentType = "PIX" | "CREDIT" | "DEBIT";
+export const paymentTypeLabels: Record<PaymentType, string> = {
+  PIX: "Pix",
+  CREDIT: "Credit",
+  DEBIT: "Debit",
+};
 export type TransactionStatus = "CREATED" | "APPROVED" | "DENIED" | "FLAGGED";
 export interface Transaction {
   id: string;
@@ -55,17 +60,17 @@ export interface LedgerPage extends Page {
   entries: LedgerEntry[];
 }
 export const statusLabels: Record<TransactionStatus, string> = {
-  CREATED: "Em análise",
-  APPROVED: "APROVADA",
-  DENIED: "NEGADA",
-  FLAGGED: "EM REVISÃO",
+  CREATED: "Pending review",
+  APPROVED: "APPROVED",
+  DENIED: "DENIED",
+  FLAGGED: "IN REVIEW",
 };
 export const currency = (amount: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "BRL" }).format(
     amount,
   );
 export const dateTime = (value: string) =>
-  new Date(value).toLocaleString("pt-BR");
+  new Date(value).toLocaleString("en-US");
 
 export type PixKeyType = "CPF" | "EMAIL" | "RANDOM";
 export interface PixKey {

@@ -1,3 +1,4 @@
+import { ArrowDownToLine, Banknote, Copy, KeyRound, Plus, RefreshCw, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router";
@@ -6,11 +7,17 @@ import type { Balance } from "../api/types";
 import { currency } from "../api/types";
 import { useAccounts } from "../auth/Accounts";
 import {
+  Button,
+  Card,
   ErrorNotice,
   Field,
+  Notice,
+  PageHeading,
   fieldErrors,
   formValues,
+  insetSurface,
   parseAmount,
+  textLink,
 } from "../components/Forms";
 
 export function AccountPage() {
@@ -59,62 +66,67 @@ export function AccountPage() {
     } catch {
       setError(
         new Error(
-          "Não foi possível copiar. Selecione o identificador e copie manualmente.",
+          "Couldn't copy the account ID. Select it and copy it manually.",
         ),
       );
     }
   }
   return (
-    <section>
-      <h1>Minha conta</h1>
+    <Card className="space-y-6">
+      <PageHeading icon={Wallet}>My account</PageHeading>
       <ErrorNotice error={error} />
       {!account ? (
-        <>
-          <p>Você ainda não tem uma conta.</p>
-          <button disabled={busy} onClick={() => void create()}>
-            {busy ? "Criando…" : "Criar conta"}
-          </button>
-        </>
+        <div className={`${insetSurface} space-y-4 p-4 sm:p-5`}>
+          <p className="text-sm text-slate-300">You don't have an account yet.</p>
+          <Button busy={busy} icon={Plus} onClick={() => void create()}>
+            {busy ? "Creating…" : "Create account"}
+          </Button>
+        </div>
       ) : (
         <>
-          <p>{account.ownerName}</p>
-          <p>Identificador da conta:</p>
-          <code className="account-id">{account.id}</code>
-          <button className="secondary" onClick={() => void copy()}>
-            Copiar identificador
-          </button>
-          {copied && <p role="status">Identificador copiado.</p>}
-          <p>Para receber transferências, cadastre uma chave em <Link to="/pix-keys">Minhas chaves PIX</Link>.</p>
           {balance ? (
-            <dl className="balances">
-              <div>
-                <dt>Saldo total</dt>
-                <dd>{currency(balance.balance)}</dd>
-              </div>
-              <div>
-                <dt>Bloqueado</dt>
-                <dd>{currency(balance.lockedBalance)}</dd>
-              </div>
-              <div>
-                <dt>Disponível</dt>
-                <dd>{currency(balance.availableBalance)}</dd>
-              </div>
+            <dl className="grid gap-3 md:grid-cols-3">
+              {[
+                { label: "Total balance", value: balance.balance },
+                { label: "Locked balance", value: balance.lockedBalance },
+                { label: "Available balance", value: balance.availableBalance, available: true },
+              ].map(({ label, value, available }) => (
+                <div className={`${insetSurface} p-4 sm:p-5 ${available ? "ring-1 ring-emerald-400/30" : ""}`} key={label}>
+                  <dt className="text-sm font-medium text-slate-400">{label}</dt>
+                  <dd className={`mt-2 text-2xl font-bold tracking-tight tabular-nums [overflow-wrap:anywhere] ${available ? "text-emerald-300" : "text-slate-100"}`}>
+                    {currency(value)}
+                  </dd>
+                </div>
+              ))}
             </dl>
           ) : (
-            !error && <p role="status">Carregando saldo…</p>
+            !error && <Notice>Loading balance…</Notice>
           )}
-          <button
-            className="secondary"
-            onClick={() => setRevision((value) => value + 1)}
-          >
-            Atualizar saldo
-          </button>
-          <p className="hint">
-            Valores em análise ou em revisão podem permanecer reservados.
-          </p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+            <Button variant="secondary" icon={RefreshCw} onClick={() => setRevision((value) => value + 1)}>
+              Refresh balance
+            </Button>
+            <p className="text-sm text-slate-400">Funds may stay on hold while a transfer is under review.</p>
+          </div>
+          <div className={`${insetSurface} space-y-4 p-4 sm:p-5`}>
+            <h2 className="font-semibold text-slate-100 [overflow-wrap:anywhere]">{account.ownerName}</h2>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-slate-400">Account ID:</p>
+                <code className="mt-1 block text-sm text-slate-200 [overflow-wrap:anywhere]">{account.id}</code>
+              </div>
+              <Button variant="secondary" icon={Copy} onClick={() => void copy()}>
+                Copy account ID
+              </Button>
+            </div>
+            {copied && <Notice tone="success">Account ID copied.</Notice>}
+            <p className="text-sm text-slate-400">
+              To receive transfers, register a key under <Link className={textLink} to="/pix-keys">My Pix keys</Link>.
+            </p>
+          </div>
         </>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -145,52 +157,52 @@ export function DepositPage() {
         },
       });
       setMessage(
-        `Depósito de ${currency(result.amount)} realizado para ${result.receiverName}.`,
+        `Deposited ${currency(result.amount)} to ${result.receiverName}.`,
       );
       form.reset();
     } catch (cause) {
       setError(cause instanceof ApiError && cause.status === 400
-        ? new ApiError(400, "Formato inválido. Verifique a chave PIX e o valor.", { ...cause.fieldErrors, pixKey: cause.fieldErrors.pixKey ?? (Object.keys(cause.fieldErrors).length ? "" : "Formato de chave PIX inválido.") })
+        ? new ApiError(400, "Invalid format. Check the Pix key and amount.", { ...cause.fieldErrors, pixKey: cause.fieldErrors.pixKey ?? (Object.keys(cause.fieldErrors).length ? "" : "Invalid Pix key format.") })
         : cause);
     } finally {
       setBusy(false);
     }
   }
   return (
-    <section>
-      <h1>Depósito PIX simulado</h1>
-      <p>
-        Informe uma chave PIX cadastrada (e-mail, CPF ou chave aleatória). Nenhum dinheiro real será
-        movimentado.
-      </p>
-      <form onSubmit={submit}>
-        <fieldset disabled={busy}>
+    <Card className="max-w-xl space-y-6">
+      <PageHeading icon={ArrowDownToLine} description="Enter a registered Pix key (email, CPF, or random key). No real money will move.">
+        Simulated Pix deposit
+      </PageHeading>
+      <form onSubmit={submit} className="space-y-4">
+        <fieldset disabled={busy} className="min-w-0 space-y-4">
           <Field
             name="pixKey"
-            label="Chave PIX (e-mail, CPF ou aleatória)"
+            label="Pix key (email, CPF, or random key)"
+            icon={KeyRound}
             required
             error={fields.pixKey}
           />
           <Field
             name="amount"
-            label="Valor (R$)"
+            label="Amount (R$)"
+            icon={Banknote}
             inputMode="decimal"
-            placeholder="150,00"
+            placeholder="150.00"
             required
             error={fields.amount}
           />
-          <button>{busy ? "Depositando…" : "Depositar"}</button>
+          <Button type="submit" busy={busy} icon={ArrowDownToLine}>{busy ? "Depositing…" : "Deposit"}</Button>
         </fieldset>
         <ErrorNotice
           error={error}
-          notFoundMessage="Chave PIX não cadastrada."
+          notFoundMessage="This Pix key isn't registered."
         />
       </form>
       {message && (
-        <p role="status">
-          {message} <Link to="/">Ver saldo</Link>
-        </p>
+        <Notice tone="success">
+          {message} <Link className={textLink} to="/">View balance</Link>
+        </Notice>
       )}
-    </section>
+    </Card>
   );
 }

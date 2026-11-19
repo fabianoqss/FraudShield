@@ -9,8 +9,8 @@ vi.mock("../auth/Accounts", () => ({
   useAccounts: () => ({ account: { id: "account" } }),
 }));
 it.each([
-  ["OUTGOING", "Saída", "Risk detected"],
-  ["INCOMING", "Entrada", undefined],
+  ["OUTGOING", "Outgoing", "Risk detected"],
+  ["INCOMING", "Incoming", undefined],
 ])("renders %s events beyond the first page without internal signals", async (direction, label, reason) => {
   vi.spyOn(api, "request").mockImplementation(async (path) => {
     if (path === "/transactions/selected")
@@ -58,18 +58,18 @@ it.each([
     </MemoryRouter>,
   );
   const next = await screen.findByRole("button", {
-    name: "Buscar nas próximas páginas",
+    name: "Search more pages",
   });
   expect(screen.queryByText(/Must not appear/)).not.toBeInTheDocument();
   await user.click(next);
-  expect(await screen.findByText(new RegExp(`${label} · R\\$\\s*12,00`))).toBeInTheDocument();
+  expect(await screen.findByText(new RegExp(`${label} · R\\$12\\.00`))).toBeInTheDocument();
   if (reason) {
-    expect(screen.getByText(`Motivo: ${reason}`)).toBeInTheDocument();
+    expect(screen.getByText(`Reason: ${reason}`)).toBeInTheDocument();
   } else {
-    expect(screen.queryByText(/Motivo:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Reason:/)).not.toBeInTheDocument();
   }
-  expect(screen.queryByText(/Pontuação de fraude/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/Fraud score/)).not.toBeInTheDocument();
   expect(
-    screen.queryByRole("button", { name: "Buscar nas próximas páginas" }),
+    screen.queryByRole("button", { name: "Search more pages" }),
   ).not.toBeInTheDocument();
 });

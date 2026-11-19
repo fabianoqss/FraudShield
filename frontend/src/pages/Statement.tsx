@@ -1,7 +1,8 @@
+import { ArrowLeft, ArrowRight, History, ReceiptText, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { api } from "../api/client";
-import { currency, dateTime, statusLabels } from "../api/types";
+import { currency, dateTime, paymentTypeLabels } from "../api/types";
 import type {
   LedgerEntry,
   LedgerPage,
@@ -9,7 +10,11 @@ import type {
   TransactionPage,
 } from "../api/types";
 import { useAccounts } from "../auth/Accounts";
-import { ErrorNotice } from "../components/Forms";
+import { Button, Card, ErrorNotice, Notice, PageHeading, TransferStatus, insetSurface, textLink } from "../components/Forms";
+
+const columns = ["Date", "Direction", "Amount", "Status", "Details"];
+const statementCell = "min-w-0 px-3 py-2.5 [overflow-wrap:anywhere] md:table-cell md:px-4 md:py-3";
+const mobileLabel = "mb-1 block text-xs font-medium text-slate-400 md:hidden";
 
 export function StatementPage() {
   const { account } = useAccounts();
@@ -34,57 +39,66 @@ export function StatementPage() {
     return () => controller.abort();
   }, [account, page, revision]);
   return (
-    <section>
-      <h1>Extrato de transferências</h1>
-      <p className="hint">
-        Depósitos PIX simulados não aparecem neste extrato.
-      </p>
+    <Card className="space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <PageHeading icon={ReceiptText} description="This statement excludes simulated Pix deposits.">
+          Transfer statement
+        </PageHeading>
+        {account && (
+          <Button variant="secondary" icon={RefreshCw} onClick={() => setRevision((value) => value + 1)}>
+            Refresh statement
+          </Button>
+        )}
+      </div>
       {!account ? (
-        <Link to="/">Crie uma conta para consultar seu extrato.</Link>
+        <Link className={textLink} to="/">Create an account to view your statement.</Link>
       ) : (
         <>
-          <button
-            className="secondary"
-            onClick={() => setRevision((value) => value + 1)}
-          >
-            Atualizar extrato
-          </button>
           <ErrorNotice error={error} />
-          {!data && !error && <p role="status">Carregando extrato…</p>}
+          {!data && !error && <Notice>Loading statement…</Notice>}
           {data && (
             <>
               {data.transactions.length === 0 ? (
-                <p>Nenhuma transferência nesta página.</p>
+                <p className={`${insetSurface} p-4 text-sm text-slate-300`}>No transfers on this page.</p>
               ) : (
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Data</th>
-                        <th>Movimento</th>
-                        <th>Valor</th>
-                        <th>Status</th>
-                        <th>Detalhes</th>
+                <div className={`${insetSurface} p-2 md:p-0`}>
+                  <table role="table" className="block w-full text-left text-sm text-slate-300 md:table md:table-fixed">
+                    <thead role="rowgroup" className="sr-only md:not-sr-only md:table-header-group">
+                      <tr role="row" className="border-b border-slate-700/80 text-slate-400">
+                        {columns.map((column) => (
+                          <th role="columnheader" scope="col" key={column} className="px-4 py-3 text-xs font-semibold">{column}</th>
+                        ))}
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody role="rowgroup" className="block divide-y divide-slate-700/80 md:table-row-group">
                       {data.transactions.map((item) => (
-                        <tr key={item.id}>
-                          <td>{dateTime(item.createdAt)}</td>
-                          <td>
-                            {item.destinationAccountId === account.id
-                              ? "Entrada"
-                              : "Saída"}{" "}
-                            · {item.type}
+                        <tr role="row" key={item.id} className="grid grid-cols-2 py-1 md:table-row">
+                          <td role="cell" className={statementCell}>
+                            <span aria-hidden="true" className={mobileLabel}>Date</span>
+                            {dateTime(item.createdAt)}
                           </td>
-                          <td>{currency(item.amount)}</td>
-                          <td>{statusLabels[item.status]}</td>
-                          <td>
+                          <td role="cell" className={statementCell}>
+                            <span aria-hidden="true" className={mobileLabel}>Direction</span>
+                            {item.destinationAccountId === account.id
+                              ? "Incoming"
+                              : "Outgoing"}{" "}
+                            · {paymentTypeLabels[item.type] ?? item.type}
+                          </td>
+                          <td role="cell" className={`${statementCell} font-semibold text-slate-100 tabular-nums`}>
+                            <span aria-hidden="true" className={mobileLabel}>Amount</span>
+                            {currency(item.amount)}
+                          </td>
+                          <td role="cell" className={statementCell}>
+                            <span aria-hidden="true" className={mobileLabel}>Status</span>
+                            <TransferStatus status={item.status} />
+                          </td>
+                          <td role="cell" className={`${statementCell} col-span-2`}>
                             <Link
+                              className={textLink}
                               to={`/statement/${item.id}`}
-                              aria-label={`Ver transação ${item.id}`}
+                              aria-label={`View transaction ${item.id}`}
                             >
-                              Ver detalhes
+                              View details
                             </Link>
                           </td>
                         </tr>
@@ -93,26 +107,28 @@ export function StatementPage() {
                   </table>
                 </div>
               )}
-              <p>Somente transferências aprovadas movimentam o saldo.</p>
-              <nav aria-label="Paginação do extrato" className="pagination">
-                <button disabled={page === 0} onClick={() => setPage(page - 1)}>
-                  Anterior
-                </button>
-                <span>
-                  Página {page + 1} de {Math.max(data.totalPages, 1)}
+              <p className="text-sm text-slate-400">Only approved transfers change your balance.</p>
+              <nav aria-label="Statement pagination" className="flex flex-wrap items-center gap-2.5">
+                <Button variant="secondary" disabled={page === 0} onClick={() => setPage(page - 1)}>
+                  Previous
+                </Button>
+                <span className="text-sm text-slate-300 tabular-nums">
+                  Page {page + 1} of {Math.max(data.totalPages, 1)}
                 </span>
-                <button
+                <Button
+                  variant="secondary"
+                  icon={ArrowRight}
                   disabled={page + 1 >= data.totalPages}
                   onClick={() => setPage(page + 1)}
                 >
-                  Próxima
-                </button>
+                  Next
+                </Button>
               </nav>
             </>
           )}
         </>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -175,80 +191,85 @@ export function TransactionPage() {
     return () => controller.abort();
   }, [account, transaction, id, ledgerPage]);
   return (
-    <section>
-      <Link to="/statement">Voltar ao extrato</Link>
-      <h1>Detalhes da transferência</h1>
-      <button
-        className="secondary"
-        onClick={() => setRevision((value) => value + 1)}
-      >
-        Atualizar detalhes
-      </button>
-      <ErrorNotice error={error} notFoundMessage="Transação não encontrada." />
-      {!transaction && !error && <p role="status">Carregando transação…</p>}
+    <Card className="space-y-5">
+      <Link className={`${textLink} inline-flex items-center gap-2 text-sm`} to="/statement">
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        Back to statement
+      </Link>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <PageHeading icon={ReceiptText}>Transfer details</PageHeading>
+        <Button variant="secondary" icon={RefreshCw} onClick={() => setRevision((value) => value + 1)}>
+          Refresh details
+        </Button>
+      </div>
+      <ErrorNotice error={error} notFoundMessage="Transaction not found." />
+      {!transaction && !error && <Notice>Loading transaction…</Notice>}
       {transaction && (
         <>
-          <dl className="details">
-            <dt>Identificador</dt>
-            <dd>{transaction.id}</dd>
-            <dt>Status</dt>
-            <dd>{statusLabels[transaction.status]}</dd>
-            <dt>Valor</dt>
-            <dd>{currency(transaction.amount)}</dd>
-            <dt>Tipo</dt>
-            <dd>{transaction.type}</dd>
-            <dt>Origem</dt>
-            <dd>{transaction.sourceAccountId}</dd>
-            <dt>Destino</dt>
-            <dd>{transaction.destinationAccountId}</dd>
-            <dt>Data</dt>
-            <dd>{dateTime(transaction.createdAt)}</dd>
+          <dl className={`${insetSurface} grid gap-x-6 gap-y-4 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3`}>
+            {[
+              { label: "Transaction ID", value: <code>{transaction.id}</code> },
+              { label: "Status", value: <TransferStatus status={transaction.status} /> },
+              { label: "Amount", value: <strong className="font-semibold text-emerald-300 tabular-nums">{currency(transaction.amount)}</strong> },
+              { label: "Type", value: paymentTypeLabels[transaction.type] ?? transaction.type },
+              { label: "Source account", value: <code>{transaction.sourceAccountId}</code> },
+              { label: "Destination account", value: <code>{transaction.destinationAccountId}</code> },
+              { label: "Date", value: dateTime(transaction.createdAt) },
+            ].map(({ label, value }) => (
+              <div key={label} className="min-w-0">
+                <dt className="text-xs font-medium text-slate-400">{label}</dt>
+                <dd className="mt-1 text-sm text-slate-100 [overflow-wrap:anywhere]">{value}</dd>
+              </div>
+            ))}
           </dl>
-          <h2>Eventos de auditoria</h2>
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <History aria-hidden="true" className="size-5 text-teal-300" />
+            Audit events
+          </h2>
           <ErrorNotice error={ledgerError} />
           {entries.map((entry) => (
-            <article className="ledger-entry" key={entry.id}>
-              <h3>
+            <article className={`${insetSurface} space-y-1 p-4 text-sm text-slate-300 [overflow-wrap:anywhere]`} key={entry.id}>
+              <h3 className="font-semibold text-slate-100">
                 {entry.eventType === "TRANSACTION_CREATED"
-                  ? "Transação criada"
+                  ? "Transaction created"
                   : entry.eventType === "TRANSACTION_APPROVED"
-                    ? "Transação aprovada"
+                    ? "Transaction approved"
                     : entry.eventType === "TRANSACTION_DENIED"
-                      ? "Transação negada"
+                      ? "Transaction denied"
                       : entry.eventType === "TRANSACTION_FLAGGED"
-                        ? "Transação em revisão"
+                        ? "Transaction in review"
                         : entry.eventType}
               </h3>
-              <p>{dateTime(entry.recordedAt)}</p>
+              <p className="text-xs text-slate-400">{dateTime(entry.recordedAt)}</p>
               <p>
-                {entry.direction === "INCOMING" ? "Entrada" : "Saída"} · {currency(entry.amount)}
+                {entry.direction === "INCOMING" ? "Incoming" : "Outgoing"} · {currency(entry.amount)}
               </p>
-              {entry.reason && <p>Motivo: {entry.reason}</p>}
+              {entry.reason && <p>Reason: {entry.reason}</p>}
             </article>
           ))}
-          {busy && <p role="status">Carregando eventos…</p>}
+          {busy && <Notice>Loading audit events…</Notice>}
           {!busy && !ledgerError && entries.length === 0 && (
-            <p>
-              Nenhum evento desta transação nas páginas consultadas. Os eventos
-              podem levar alguns instantes para chegar.
+            <p className="text-sm text-slate-400">
+              No events for this transaction on the pages searched so far. Events may take a moment to appear.
             </p>
           )}
           {ledgerPage + 1 < totalPages && (
             <>
-              <p>
-                Há mais páginas de auditoria que podem conter eventos desta
-                transação.
+              <p className="text-sm text-slate-400">
+                More audit pages may contain events for this transaction.
               </p>
-              <button
-                disabled={busy || !!ledgerError}
+              <Button
+                variant="secondary"
+                busy={busy}
+                disabled={!!ledgerError}
                 onClick={() => setLedgerPage((page) => page + 1)}
               >
-                Buscar nas próximas páginas
-              </button>
+                Search more pages
+              </Button>
             </>
           )}
         </>
       )}
-    </section>
+    </Card>
   );
 }
