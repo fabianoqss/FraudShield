@@ -11,7 +11,7 @@ export class ApiError extends Error {
 
 export class NetworkError extends Error {
   constructor() {
-    super("Não foi possível confirmar a resposta. Verifique sua conexão.");
+    super("Couldn't confirm the response. Check your connection.");
   }
 }
 
@@ -37,7 +37,7 @@ const refreshKey = "fraudshield.refreshToken";
 
 export function decodeUser(token: string): User {
   const payload = token.split(".")[1];
-  if (!payload) throw new Error("Token inválido.");
+  if (!payload) throw new Error("Invalid token.");
   const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
   const bytes = Uint8Array.from(
     atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")),
@@ -54,7 +54,7 @@ export function decodeUser(token: string): User {
     typeof value.fullName !== "string" ||
     typeof value.email !== "string"
   ) {
-    throw new Error("Token inválido.");
+    throw new Error("Invalid token.");
   }
   return { sub: value.sub, fullName: value.fullName, email: value.email };
 }
@@ -91,7 +91,7 @@ export class ApiClient {
   private accept(tokens: Tokens) {
     const user = decodeUser(tokens.accessToken);
     if (typeof tokens.refreshToken !== "string" || !tokens.refreshToken)
-      throw new Error("Resposta de autenticação inválida.");
+      throw new Error("Invalid authentication response.");
     this.storage.setItem(refreshKey, tokens.refreshToken);
     this.accessToken = tokens.accessToken;
     this.publish(user);
@@ -146,7 +146,7 @@ export class ApiClient {
         response.status,
         typeof data?.message === "string"
           ? data.message
-          : `Falha na solicitação (${response.status}).`,
+          : `Request failed (${response.status}).`,
         fields,
         response.headers.get("Retry-After"),
       );
@@ -161,7 +161,7 @@ export class ApiClient {
       try {
         const refreshToken = this.storage.getItem(refreshKey);
         if (!refreshToken)
-          throw new ApiError(401, "Sua sessão expirou. Entre novamente.");
+          throw new ApiError(401, "Your session expired. Sign in again.");
         const tokens = await this.read<Tokens>(
           await this.send(
             "/auth/refresh",
@@ -170,7 +170,7 @@ export class ApiClient {
           ),
         );
         if (generation !== this.generation)
-          throw new ApiError(401, "Sessão encerrada.");
+          throw new ApiError(401, "Your session has ended.");
         this.accept(tokens);
       } catch (error) {
         if (generation === this.generation) this.clear();
@@ -218,15 +218,15 @@ export class ApiClient {
     let response = await this.send(path, options, sentToken);
     if (!options.public && response.status === 401) {
       if (generation !== this.generation)
-        throw new ApiError(401, "Sessão encerrada.");
+        throw new ApiError(401, "Your session has ended.");
       // A delayed 401 for the previous access token can reuse the already rotated token.
       if (sentToken === this.accessToken) await this.refresh();
       if (generation !== this.generation)
-        throw new ApiError(401, "Sessão encerrada.");
+        throw new ApiError(401, "Your session has ended.");
       options.signal?.throwIfAborted();
       response = await this.send(path, options, this.accessToken);
       if (generation !== this.generation)
-        throw new ApiError(401, "Sessão encerrada.");
+        throw new ApiError(401, "Your session has ended.");
       if (response.status === 401 && !options.keepSessionOnUnauthorized)
         this.clear();
     }

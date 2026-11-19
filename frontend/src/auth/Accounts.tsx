@@ -41,19 +41,19 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
   }, []);
   const account =
     accounts.find((item) => item.id === selected) ?? accounts[0] ?? null;
-  if (loading) return <p role="status">Carregando contas…</p>;
+  if (loading) return <p role="status">Loading accounts…</p>;
   if (error)
     return (
       <section>
         <ErrorNotice error={error} />
-        <button onClick={() => void reload()}>Tentar novamente</button>
+        <button onClick={() => void reload()}>Try again</button>
       </section>
     );
   return (
     <Context.Provider value={{ accounts, account, reload }}>
       {accounts.length > 1 && (
         <label className="account-picker">
-          Conta selecionada
+          Selected account
           <select
             value={account?.id}
             onChange={(event) => setSelected(event.target.value)}

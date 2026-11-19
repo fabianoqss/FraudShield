@@ -36,12 +36,12 @@ export function ErrorNotice({
   let message =
     error instanceof Error
       ? error.message
-      : "Não foi possível concluir a operação.";
+      : "Couldn't complete the request.";
   if (error instanceof ApiError) {
     const messages: Record<number, string> = {
-      403: "Você não tem permissão para acessar esta conta ou operação.",
-      429: "Muitas tentativas de login. Aguarde 15 minutos e tente novamente.",
-      503: "Serviço temporariamente indisponível. Tente novamente mais tarde.",
+      403: "You don't have permission to access this account or perform this action.",
+      429: "Too many sign-in attempts. Wait 15 minutes and try again.",
+      503: "Service temporarily unavailable. Try again later.",
     };
     message =
       error.status === 404
@@ -67,7 +67,7 @@ export function formValues(form: HTMLFormElement) {
 }
 export function parseAmount(value: string): number {
   if (!/^\d+(?:[.,]\d{1,2})?$/.test(value.trim()))
-    throw new Error("Informe um valor com até duas casas decimais.");
+    throw new Error("Enter an amount with up to two decimal places.");
   const amount = Number(value.trim().replace(",", "."));
   if (
     !Number.isFinite(amount) ||
@@ -75,7 +75,7 @@ export function parseAmount(value: string): number {
     !Number.isSafeInteger(Math.round(amount * 100))
   )
     throw new Error(
-      "Informe um valor maior que zero e dentro do limite permitido.",
+      "Enter an amount greater than zero and within the allowed limit.",
     );
   return amount;
 }

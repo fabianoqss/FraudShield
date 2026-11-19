@@ -14,38 +14,38 @@ it("lists formatted keys, copies the full random key and disables existing CPF/e
   show();
   expect(await screen.findByText("529.982.247-25")).toBeInTheDocument();
   expect(screen.getByText("ana@example.com")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Cadastrar CPF" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Cadastrar E-mail" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Cadastrar Chave aleatória" })).toBeEnabled();
-  await user.click(screen.getByRole("button", { name: `Copiar ${key("RANDOM").value}` }));
+  expect(screen.getByRole("button", { name: "Register CPF" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Register email" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Register a random key" })).toBeEnabled();
+  await user.click(screen.getByRole("button", { name: `Copy ${key("RANDOM").value}` }));
   expect(copy).toHaveBeenCalledWith(key("RANDOM").value);
 });
-it.each([["CPF", "CPF"], ["EMAIL", "E-mail"], ["RANDOM", "Chave aleatória"]] as const)("registers %s sending only type", async (type, label) => {
+it.each([["CPF", "Register CPF"], ["EMAIL", "Register email"], ["RANDOM", "Register a random key"]] as const)("registers %s sending only type", async (type, label) => {
   const request = vi.spyOn(api, "request").mockResolvedValueOnce([]).mockResolvedValueOnce(key(type));
   const user = userEvent.setup(); show();
-  await user.click(await screen.findByRole("button", { name: `Cadastrar ${label}` }));
+  await user.click(await screen.findByRole("button", { name: label }));
   expect(request.mock.calls[1]).toEqual(["/accounts/source/pix-keys", { method: "POST", body: { type } }]);
-  expect(screen.getByText("1 de 5 chaves cadastradas.")).toBeInTheDocument();
+  expect(screen.getByText("1 of 5 keys registered.")).toBeInTheDocument();
 });
-it.each([[409, "Duplicate", "Esta chave já está cadastrada"], [422, "Account is not active", "Account is not active"], [503, "Unavailable", "indisponível"]])("handles HTTP %s registration errors", async (status, backend, message) => {
+it.each([[409, "Duplicate", "This Pix key is already registered."], [422, "Account is not active", "Account is not active"], [503, "Unavailable", "temporarily unavailable"]])("handles HTTP %s registration errors", async (status, backend, message) => {
   vi.spyOn(api, "request").mockResolvedValueOnce([]).mockRejectedValueOnce(new ApiError(Number(status), String(backend)));
   const user = userEvent.setup(); show();
-  await user.click(await screen.findByRole("button", { name: "Cadastrar CPF" }));
+  await user.click(await screen.findByRole("button", { name: "Register CPF" }));
   expect(screen.getByRole("alert")).toHaveTextContent(String(message));
 });
 it("disables all registrations at five keys", async () => {
   vi.spyOn(api, "request").mockResolvedValue(Array.from({ length: 5 }, (_, i) => key("RANDOM", String(i))));
   show();
-  await screen.findByText("Limite de 5 chaves atingido.");
-  for (const button of screen.getAllByRole("button", { name: /Cadastrar/ })) expect(button).toBeDisabled();
+  await screen.findByText("You've reached the 5-key limit.");
+  for (const button of screen.getAllByRole("button", { name: /Register/ })) expect(button).toBeDisabled();
 });
 it("requires confirmation before deleting and enables the removed type", async () => {
   const request = vi.spyOn(api, "request").mockResolvedValueOnce([key()]).mockResolvedValueOnce(undefined);
   const user = userEvent.setup(); show();
-  await user.click(await screen.findByRole("button", { name: "Remover 529.982.247-25" }));
+  await user.click(await screen.findByRole("button", { name: "Remove 529.982.247-25" }));
   expect(request).toHaveBeenCalledTimes(1);
-  await user.click(within(screen.getByRole("group", { name: "Confirmar remoção" })).getByRole("button", { name: "Confirmar remoção" }));
+  await user.click(within(screen.getByRole("group", { name: "Confirm removal" })).getByRole("button", { name: "Confirm removal" }));
   expect(request.mock.calls[1]).toEqual(["/accounts/source/pix-keys/key-1", { method: "DELETE" }]);
-  expect(screen.getByText("Nenhuma chave cadastrada nesta conta.")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Cadastrar CPF" })).toBeEnabled();
+  expect(screen.getByText("This account has no registered Pix keys.")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Register CPF" })).toBeEnabled();
 });

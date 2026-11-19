@@ -11,7 +11,7 @@ import { StatementPage, TransactionPage } from "./pages/Statement";
 
 function Protected() {
   const { user, ready } = useSession();
-  if (!ready) return <p role="status">Restaurando sessão…</p>;
+  if (!ready) return <p role="status">Restoring session…</p>;
   if (!user) return <Navigate to="/login" replace />;
   return <Outlet />;
 }
@@ -34,7 +34,7 @@ export function App() {
       await api.logout();
     } catch {
       setLogoutMessage(
-        "Você saiu neste navegador, mas não foi possível confirmar a revogação no servidor.",
+        "You signed out in this browser, but we couldn't confirm that the server revoked your session.",
       );
     } finally {
       setLoggingOut(false);
@@ -46,25 +46,25 @@ export function App() {
         <Link className="brand" to="/">
           FraudShield
         </Link>
-        <p>Pagamentos simulados com detecção de fraude.</p>
+        <p>Simulated payments with fraud detection.</p>
         {user && (
           <>
-            <p>Olá, {user.fullName}</p>
-            <nav aria-label="Menu principal">
+            <p>Hello, {user.fullName}</p>
+            <nav aria-label="Main menu">
               <NavLink to="/" end>
-                Minha conta
+                My account
               </NavLink>
-              <NavLink to="/deposit">Depositar</NavLink>
-              <NavLink to="/pix-keys">Minhas chaves PIX</NavLink>
-              <NavLink to="/transfer">Transferir</NavLink>
-              <NavLink to="/statement">Extrato</NavLink>
-              <NavLink to="/password">Trocar senha</NavLink>
+              <NavLink to="/deposit">Deposit</NavLink>
+              <NavLink to="/pix-keys">My Pix keys</NavLink>
+              <NavLink to="/transfer">Transfer</NavLink>
+              <NavLink to="/statement">Statement</NavLink>
+              <NavLink to="/password">Change password</NavLink>
               <button
                 className="secondary"
                 disabled={loggingOut}
                 onClick={() => void logout()}
               >
-                {loggingOut ? "Saindo…" : "Sair"}
+                {loggingOut ? "Signing out…" : "Sign out"}
               </button>
             </nav>
           </>
@@ -92,13 +92,13 @@ export function App() {
           path="*"
           element={
             <section>
-              <h1>Página não encontrada</h1>
-              <Link to="/">Voltar ao início</Link>
+              <h1>Page not found</h1>
+              <Link to="/">Back to home</Link>
             </section>
           }
         />
       </Routes>
-      <footer>Projeto de portfólio. Todas as operações são simuladas.</footer>
+      <footer>Portfolio project. All transactions are simulated.</footer>
     </main>
   );
 }

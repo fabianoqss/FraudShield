@@ -59,58 +59,58 @@ export function AccountPage() {
     } catch {
       setError(
         new Error(
-          "Não foi possível copiar. Selecione o identificador e copie manualmente.",
+          "Couldn't copy the account ID. Select it and copy it manually.",
         ),
       );
     }
   }
   return (
     <section>
-      <h1>Minha conta</h1>
+      <h1>My account</h1>
       <ErrorNotice error={error} />
       {!account ? (
         <>
-          <p>Você ainda não tem uma conta.</p>
+          <p>You don't have an account yet.</p>
           <button disabled={busy} onClick={() => void create()}>
-            {busy ? "Criando…" : "Criar conta"}
+            {busy ? "Creating…" : "Create account"}
           </button>
         </>
       ) : (
         <>
           <p>{account.ownerName}</p>
-          <p>Identificador da conta:</p>
+          <p>Account ID:</p>
           <code className="account-id">{account.id}</code>
           <button className="secondary" onClick={() => void copy()}>
-            Copiar identificador
+            Copy account ID
           </button>
-          {copied && <p role="status">Identificador copiado.</p>}
-          <p>Para receber transferências, cadastre uma chave em <Link to="/pix-keys">Minhas chaves PIX</Link>.</p>
+          {copied && <p role="status">Account ID copied.</p>}
+          <p>To receive transfers, register a key under <Link to="/pix-keys">My Pix keys</Link>.</p>
           {balance ? (
             <dl className="balances">
               <div>
-                <dt>Saldo total</dt>
+                <dt>Total balance</dt>
                 <dd>{currency(balance.balance)}</dd>
               </div>
               <div>
-                <dt>Bloqueado</dt>
+                <dt>Locked balance</dt>
                 <dd>{currency(balance.lockedBalance)}</dd>
               </div>
               <div>
-                <dt>Disponível</dt>
+                <dt>Available balance</dt>
                 <dd>{currency(balance.availableBalance)}</dd>
               </div>
             </dl>
           ) : (
-            !error && <p role="status">Carregando saldo…</p>
+            !error && <p role="status">Loading balance…</p>
           )}
           <button
             className="secondary"
             onClick={() => setRevision((value) => value + 1)}
           >
-            Atualizar saldo
+            Refresh balance
           </button>
           <p className="hint">
-            Valores em análise ou em revisão podem permanecer reservados.
+            Funds may stay on hold while a transfer is under review.
           </p>
         </>
       )}
@@ -145,12 +145,12 @@ export function DepositPage() {
         },
       });
       setMessage(
-        `Depósito de ${currency(result.amount)} realizado para ${result.receiverName}.`,
+        `Deposited ${currency(result.amount)} to ${result.receiverName}.`,
       );
       form.reset();
     } catch (cause) {
       setError(cause instanceof ApiError && cause.status === 400
-        ? new ApiError(400, "Formato inválido. Verifique a chave PIX e o valor.", { ...cause.fieldErrors, pixKey: cause.fieldErrors.pixKey ?? (Object.keys(cause.fieldErrors).length ? "" : "Formato de chave PIX inválido.") })
+        ? new ApiError(400, "Invalid format. Check the Pix key and amount.", { ...cause.fieldErrors, pixKey: cause.fieldErrors.pixKey ?? (Object.keys(cause.fieldErrors).length ? "" : "Invalid Pix key format.") })
         : cause);
     } finally {
       setBusy(false);
@@ -158,37 +158,36 @@ export function DepositPage() {
   }
   return (
     <section>
-      <h1>Depósito PIX simulado</h1>
+      <h1>Simulated Pix deposit</h1>
       <p>
-        Informe uma chave PIX cadastrada (e-mail, CPF ou chave aleatória). Nenhum dinheiro real será
-        movimentado.
+        Enter a registered Pix key (email, CPF, or random key). No real money will move.
       </p>
       <form onSubmit={submit}>
         <fieldset disabled={busy}>
           <Field
             name="pixKey"
-            label="Chave PIX (e-mail, CPF ou aleatória)"
+            label="Pix key (email, CPF, or random key)"
             required
             error={fields.pixKey}
           />
           <Field
             name="amount"
-            label="Valor (R$)"
+            label="Amount (R$)"
             inputMode="decimal"
-            placeholder="150,00"
+            placeholder="150.00"
             required
             error={fields.amount}
           />
-          <button>{busy ? "Depositando…" : "Depositar"}</button>
+          <button>{busy ? "Depositing…" : "Deposit"}</button>
         </fieldset>
         <ErrorNotice
           error={error}
-          notFoundMessage="Chave PIX não cadastrada."
+          notFoundMessage="This Pix key isn't registered."
         />
       </form>
       {message && (
         <p role="status">
-          {message} <Link to="/">Ver saldo</Link>
+          {message} <Link to="/">View balance</Link>
         </p>
       )}
     </section>

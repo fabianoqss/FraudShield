@@ -12,10 +12,10 @@ it("allows an unauthenticated user to recover from an unknown URL", async () => 
     </MemoryRouter>,
   );
   expect(
-    screen.getByRole("heading", { name: "Página não encontrada" }),
+    screen.getByRole("heading", { name: "Page not found" }),
   ).toBeInTheDocument();
-  await user.click(screen.getByRole("link", { name: "Voltar ao início" }));
+  await user.click(screen.getByRole("link", { name: "Back to home" }));
   expect(
-    await screen.findByRole("heading", { name: "Entrar" }),
+    await screen.findByRole("heading", { name: "Sign in" }),
   ).toBeInTheDocument();
 });

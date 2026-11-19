@@ -15,7 +15,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
   const [registered, setRegistered] = useState(false);
-  if (!ready) return <p role="status">Restaurando sessão…</p>;
+  if (!ready) return <p role="status">Restoring session…</p>;
   if (user) return <Navigate to="/" replace />;
   const fields = fieldErrors(error);
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -36,7 +36,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
     } catch (cause) {
       setError(
         cause instanceof ApiError && cause.status === 401
-          ? new Error("E-mail ou senha incorretos.")
+          ? new Error("Incorrect email or password.")
           : cause,
       );
     } finally {
@@ -46,16 +46,16 @@ export function AuthPage({ register = false }: { register?: boolean }) {
   const isRegister = register && !registered;
   return (
     <section className="auth-card">
-      <h1>{isRegister ? "Criar cadastro" : "Entrar"}</h1>
+      <h1>{isRegister ? "Sign up" : "Sign in"}</h1>
       {registered && (
-        <p role="status">Cadastro criado. Entre com seu e-mail e senha.</p>
+        <p role="status">Registration complete. Sign in with your email and password.</p>
       )}
       <form onSubmit={submit}>
         <fieldset disabled={busy}>
           {isRegister && (
             <Field
               name="fullName"
-              label="Nome completo"
+              label="Full name"
               autoComplete="name"
               required
               error={fields.fullName}
@@ -64,7 +64,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
           <Field
             name="email"
             type="email"
-            label="E-mail"
+            label="Email"
             autoComplete="email"
             required
             error={fields.email}
@@ -81,17 +81,17 @@ export function AuthPage({ register = false }: { register?: boolean }) {
               <Field
                 name="birthDate"
                 type="date"
-                label="Data de nascimento"
+                label="Date of birth"
                 required
                 error={fields.birthDate}
               />
-              <p className="hint">É necessário ter 18 anos ou mais.</p>
+              <p className="hint">You must be at least 18 years old.</p>
             </>
           )}
           <Field
             name="password"
             type="password"
-            label="Senha"
+            label="Password"
             autoComplete={isRegister ? "new-password" : "current-password"}
             minLength={isRegister ? 8 : undefined}
             required
@@ -99,18 +99,17 @@ export function AuthPage({ register = false }: { register?: boolean }) {
           />
           {isRegister && (
             <p className="hint">
-              Use pelo menos 8 caracteres, com maiúscula, minúscula, número e
-              caractere especial.
+              Use at least 8 characters, including an uppercase letter, a lowercase letter, a number, and a special character.
             </p>
           )}
           <button type="submit">
-            {busy ? "Aguarde…" : isRegister ? "Cadastrar" : "Entrar"}
+            {busy ? "Please wait…" : isRegister ? "Register" : "Sign in"}
           </button>
         </fieldset>
         <ErrorNotice error={error} />
       </form>
       <Link to={isRegister ? "/login" : "/register"}>
-        {isRegister ? "Já tenho cadastro" : "Criar cadastro"}
+        {isRegister ? "I already have an account" : "Sign up"}
       </Link>
     </section>
   );
@@ -125,7 +124,7 @@ export function PasswordPage() {
     const values = formValues(event.currentTarget);
     setError(undefined);
     if (values.newPassword !== values.confirmPassword) {
-      setError(new Error("As novas senhas não coincidem."));
+      setError(new Error("The new passwords don't match."));
       return;
     }
     setBusy(true);
@@ -139,7 +138,7 @@ export function PasswordPage() {
     } catch (cause) {
       setError(
         cause instanceof ApiError && cause.status === 401
-          ? new Error("A senha atual está incorreta.")
+          ? new Error("Your current password is incorrect.")
           : cause,
       );
     } finally {
@@ -148,13 +147,13 @@ export function PasswordPage() {
   }
   return (
     <section>
-      <h1>Trocar senha</h1>
-      <p>Após a alteração, você precisará entrar novamente.</p>
+      <h1>Change password</h1>
+      <p>You'll need to sign in again after changing your password.</p>
       <form onSubmit={submit}>
         <fieldset disabled={busy}>
           <Field
             name="currentPassword"
-            label="Senha atual"
+            label="Current password"
             type="password"
             autoComplete="current-password"
             required
@@ -162,7 +161,7 @@ export function PasswordPage() {
           />
           <Field
             name="newPassword"
-            label="Nova senha"
+            label="New password"
             type="password"
             autoComplete="new-password"
             minLength={8}
@@ -170,18 +169,18 @@ export function PasswordPage() {
             error={fields.newPassword}
           />
           <p className="hint">
-            Use maiúscula, minúscula, número e caractere especial.
+            Use an uppercase letter, a lowercase letter, a number, and a special character.
           </p>
           <Field
             name="confirmPassword"
-            label="Confirme a nova senha"
+            label="Confirm new password"
             type="password"
             autoComplete="new-password"
             minLength={8}
             required
             error={fields.confirmPassword}
           />
-          <button>{busy ? "Salvando…" : "Alterar senha"}</button>
+          <button>{busy ? "Saving…" : "Change password"}</button>
         </fieldset>
         <ErrorNotice error={error} />
       </form>

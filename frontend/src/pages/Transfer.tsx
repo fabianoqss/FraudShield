@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { Link } from "react-router";
 import { api, ApiError, NetworkError } from "../api/client";
 import { pollTransaction } from "../api/poll";
-import { currency, statusLabels } from "../api/types";
+import { currency, paymentTypeLabels, statusLabels } from "../api/types";
 import type { PaymentType, PixKeyLookup, Transaction, TransferRequest } from "../api/types";
 import { useAccounts } from "../auth/Accounts";
 import {
@@ -27,9 +27,9 @@ export function TransferPage() {
   if (!account)
     return (
       <section>
-        <h1>Transferir</h1>
-        <p>Crie uma conta antes de transferir.</p>
-        <Link to="/">Minha conta</Link>
+        <h1>Transfer</h1>
+        <p>Create an account before making a transfer.</p>
+        <Link to="/">My account</Link>
       </section>
     );
   return <TransferForm key={account.id} accountId={account.id} />;
@@ -60,7 +60,7 @@ export function TransferForm({ accountId }: { accountId: string }) {
   const waitSeconds = Math.max(0, Math.ceil((retryAt - now) / 1000));
   function expireLookup() {
     setLookup(undefined);
-    setError(new Error("Consulta expirada ou inválida. Consulte a chave PIX novamente."));
+    setError(new Error("The lookup expired or is invalid. Look up the Pix key again."));
   }
   useEffect(() => {
     if (!retryAt) return;
@@ -80,7 +80,7 @@ export function TransferForm({ accountId }: { accountId: string }) {
     controller.current?.abort();
     const current = new AbortController();
     controller.current = current;
-    setPollingMessage("Acompanhando a análise…");
+    setPollingMessage("Checking transfer status…");
     try {
       const result = await pollTransaction(
         created.id,
@@ -90,14 +90,14 @@ export function TransferForm({ accountId }: { accountId: string }) {
       if (!current.signal.aborted)
         setPollingMessage(
           result === "timeout"
-            ? "A análise ainda está pendente. Consulte o extrato para acompanhar."
+            ? "The transfer is still pending review. Check your statement for updates."
             : "",
         );
     } catch (cause) {
       if (!current.signal.aborted) {
         setError(cause);
         setPollingMessage(
-          "Não foi possível acompanhar o status. Consulte o extrato.",
+          "Couldn't check the transfer status. Check your statement for updates.",
         );
       }
     }
@@ -122,7 +122,7 @@ export function TransferForm({ accountId }: { accountId: string }) {
         setRetry(payload);
         setError(
           new Error(
-            "A resposta não chegou. A transferência pode ter sido criada. Consulte o extrato ou repita o mesmo envio com segurança.",
+            "We didn't receive a response. Your transfer may have been created. Check your statement or safely retry the same submission.",
           ),
         );
       } else {
@@ -130,15 +130,15 @@ export function TransferForm({ accountId }: { accountId: string }) {
         if (cause instanceof ApiError && cause.status === 409)
           setError(
             new Error(
-              "Este envio já foi registrado. Consulte o extrato antes de fazer outra transferência.",
+              "This submission was already accepted. Check your statement before making another transfer.",
             ),
           );
         else if (cause instanceof ApiError && cause.status === 422) {
           if (/lookup|consulta/i.test(cause.message)) expireLookup();
           else setError(new Error(/same account|mesma conta/i.test(cause.message)
-            ? "Não é possível transferir para a mesma conta."
+            ? "You can't transfer to the same account."
             : /insufficient|saldo insuficiente/i.test(cause.message)
-              ? "Saldo insuficiente para realizar a transferência." : cause.message));
+              ? "Insufficient funds for this transfer." : cause.message));
         }
         else setError(cause);
       }
@@ -164,15 +164,15 @@ export function TransferForm({ accountId }: { accountId: string }) {
     } catch (cause) {
       if (!mounted.current) return;
       if (cause instanceof ApiError && cause.status === 400)
-        setError(new ApiError(400, "Formato de chave PIX inválido.", { key: "Formato de chave PIX inválido." }));
+        setError(new ApiError(400, "Invalid Pix key format.", { key: "Invalid Pix key format." }));
       else if (cause instanceof ApiError && cause.status === 404)
-        setError(new Error("Chave PIX não encontrada"));
+        setError(new Error("Pix key not found"));
       else if (cause instanceof ApiError && cause.status === 429) {
         const seconds = Number(cause.retryAfter);
         const delay = Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : 60;
         setNow(Date.now());
         setRetryAt(Date.now() + delay * 1000);
-        setError(new Error("Muitas consultas. Aguarde para consultar novamente."));
+        setError(new Error("Too many lookups. Wait before trying again."));
       } else setError(cause);
     } finally {
       inFlight.current = false;
@@ -190,15 +190,15 @@ export function TransferForm({ accountId }: { accountId: string }) {
   }
   return (
     <section>
-      <h1>Transferir</h1>
+      <h1>Transfer</h1>
       <ErrorNotice error={error} />
       {!transaction && !lookup && (
         <form onSubmit={submit}>
-          <h2>Para quem?</h2>
+          <h2>Recipient</h2>
           <fieldset disabled={busy || !!retry}>
             <Field
               name="key"
-              label="Chave PIX"
+              label="Pix key"
               value={key}
               onChange={(event) => setKey(event.target.value)}
               required
@@ -208,35 +208,37 @@ export function TransferForm({ accountId }: { accountId: string }) {
               name="amount"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              label="Valor (R$)"
+              label="Amount (R$)"
               inputMode="decimal"
-              placeholder="100,00"
+              placeholder="100.00"
               required
               error={fields.amount}
             />
-            <label htmlFor="payment-type">Tipo</label>
+            <label htmlFor="payment-type">Payment type</label>
             <select id="payment-type" name="type" value={type} onChange={(event) => setType(event.target.value as PaymentType)}>
-              <option value="PIX">PIX</option>
-              <option value="CREDIT">Crédito</option>
-              <option value="DEBIT">Débito</option>
+              <option value="PIX">{paymentTypeLabels.PIX}</option>
+              <option value="CREDIT">{paymentTypeLabels.CREDIT}</option>
+              <option value="DEBIT">{paymentTypeLabels.DEBIT}</option>
             </select>
             {fields.type && <p className="field-error">{fields.type}</p>}
-            <button disabled={waitSeconds > 0}>{busy ? "Consultando…" : "Consultar chave"}</button>
+            <button disabled={waitSeconds > 0}>{busy ? "Looking up key…" : "Look up key"}</button>
           </fieldset>
         </form>
       )}
-      {waitSeconds > 0 && <p role="status">Muitas consultas. Aguarde {waitSeconds} segundos.</p>}
+      {waitSeconds > 0 && (
+        <p role="status">Too many lookups. Try again in {waitSeconds} {waitSeconds === 1 ? "second" : "seconds"}.</p>
+      )}
       {!transaction && lookup && <div>
-        <h2>Confirme</h2>
-        <p>Você está enviando {currency(parseAmount(amount))} para {lookup.recipientName} (CPF {lookup.maskedCpf})</p>
-        <button disabled={busy || !!retry} onClick={confirm}>{busy ? "Enviando…" : "Confirmar"}</button>
-        <button className="secondary" disabled={busy || !!retry} onClick={() => { setLookup(undefined); setError(undefined); }}>Voltar</button>
+        <h2>Confirm transfer</h2>
+        <p>You're sending {currency(parseAmount(amount))} to {lookup.recipientName} (CPF {lookup.maskedCpf})</p>
+        <button disabled={busy || !!retry} onClick={confirm}>{busy ? "Sending…" : "Confirm"}</button>
+        <button className="secondary" disabled={busy || !!retry} onClick={() => { setLookup(undefined); setError(undefined); }}>Back</button>
       </div>}
       {retry && (
         <div>
-          <p>Os dados do envio foram preservados para evitar duplicação.</p>
+          <p>We saved the transfer details to prevent a duplicate submission.</p>
           <button disabled={busy} onClick={() => void send(retry)}>
-            Repetir o mesmo envio
+            Retry same submission
           </button>
           <button
             type="button"
@@ -248,9 +250,9 @@ export function TransferForm({ accountId }: { accountId: string }) {
               setError(undefined);
             }}
           >
-            Descartar e fazer nova transferência
+            Discard and start a new transfer
           </button>
-          <Link to="/statement">Consultar extrato</Link>
+          <Link to="/statement">View statement</Link>
         </div>
       )}
       {transaction && (
@@ -259,28 +261,25 @@ export function TransferForm({ accountId }: { accountId: string }) {
             <strong>{statusLabels[transaction.status]}</strong>
           </p>
           <p>
-            Transação: <code>{transaction.id}</code>
+            Transaction: <code>{transaction.id}</code>
           </p>
           {transaction.status === "DENIED" && (
             <p>
-              A transferência foi negada pela análise de fraude. O valor não foi
-              transferido.
+              Fraud screening declined this transfer. No money was sent.
             </p>
           )}
           {transaction.status === "FLAGGED" && (
             <p>
-              A transferência aguarda revisão manual e o valor permanece
-              reservado.
+              The transfer is pending manual review. The funds remain on hold.
             </p>
           )}
           {transaction.status === "APPROVED" && (
             <p>
-              Transferência aprovada. O saldo pode levar alguns instantes para
-              atualizar.
+              Transfer approved. Your balance may take a moment to update.
             </p>
           )}
           {pollingMessage && <p role="status">{pollingMessage}</p>}
-          <Link to={`/statement/${transaction.id}`}>Ver detalhes</Link>
+          <Link to={`/statement/${transaction.id}`}>View details</Link>
           {transaction.status !== "CREATED" && (
             <button
               className="secondary"
@@ -290,7 +289,7 @@ export function TransferForm({ accountId }: { accountId: string }) {
                 setError(undefined);
               }}
             >
-              Nova transferência
+              New transfer
             </button>
           )}
         </div>
