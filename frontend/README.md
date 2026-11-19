@@ -37,7 +37,7 @@ O build gera `dist/`. Para publicar esse diretório, configure no servidor o enc
 - Cadastro com erros por campo; login e aviso de bloqueio por 15 minutos no HTTP 429.
 - Rotas protegidas e restauração da sessão ao recarregar a página.
 - Listagem/seleção de contas, criação quando não há contas, saldo total, bloqueado e disponível, cópia do identificador.
-- Minhas chaves PIX (`/chaves`): lista por conta selecionada, cadastro de CPF/e-mail do usuário ou chave aleatória, cópia e remoção com confirmação; limite de 5 chaves.
+- Minhas chaves PIX (`/pix-keys`): lista por conta selecionada, cadastro de CPF/e-mail do usuário ou chave aleatória, cópia e remoção com confirmação; limite de 5 chaves.
 - Depósito PIX simulado por chave cadastrada (e-mail, CPF ou aleatória); chave não cadastrada retorna aviso específico.
 - Transferências PIX, crédito ou débito por consulta de chave → confirmação do nome e CPF mascarado, com acompanhamento a cada 1,5 segundo por até 30 segundos.
 - Extrato paginado com origem/destino e status, detalhes da transação e eventos de auditoria com pontuação de fraude.

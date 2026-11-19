@@ -109,7 +109,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
         </fieldset>
         <ErrorNotice error={error} />
       </form>
-      <Link to={isRegister ? "/login" : "/cadastro"}>
+      <Link to={isRegister ? "/login" : "/register"}>
         {isRegister ? "Já tenho cadastro" : "Criar cadastro"}
       </Link>
     </section>

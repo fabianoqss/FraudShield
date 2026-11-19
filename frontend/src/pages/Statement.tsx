@@ -81,7 +81,7 @@ export function StatementPage() {
                           <td>{statusLabels[item.status]}</td>
                           <td>
                             <Link
-                              to={`/extrato/${item.id}`}
+                              to={`/statement/${item.id}`}
                               aria-label={`Ver transação ${item.id}`}
                             >
                               Ver detalhes
@@ -176,7 +176,7 @@ export function TransactionPage() {
   }, [account, transaction, id, ledgerPage]);
   return (
     <section>
-      <Link to="/extrato">Voltar ao extrato</Link>
+      <Link to="/statement">Voltar ao extrato</Link>
       <h1>Detalhes da transferência</h1>
       <button
         className="secondary"

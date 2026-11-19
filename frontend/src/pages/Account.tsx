@@ -84,7 +84,7 @@ export function AccountPage() {
             Copiar identificador
           </button>
           {copied && <p role="status">Identificador copiado.</p>}
-          <p>Para receber transferências, cadastre uma chave em <Link to="/chaves">Minhas chaves PIX</Link>.</p>
+          <p>Para receber transferências, cadastre uma chave em <Link to="/pix-keys">Minhas chaves PIX</Link>.</p>
           {balance ? (
             <dl className="balances">
               <div>
