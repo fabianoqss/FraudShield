@@ -51,9 +51,9 @@ it.each([
   });
   const user = userEvent.setup();
   render(
-    <MemoryRouter initialEntries={["/extrato/selected"]}>
+    <MemoryRouter initialEntries={["/statement/selected"]}>
       <Routes>
-        <Route path="/extrato/:id" element={<TransactionPage />} />
+        <Route path="/statement/:id" element={<TransactionPage />} />
       </Routes>
     </MemoryRouter>,
   );

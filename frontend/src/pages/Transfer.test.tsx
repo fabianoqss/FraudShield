@@ -34,7 +34,7 @@ it("looks up in the body, confirms recipient and sends only lookupId for the des
     sourceAccountId: "source", lookupId: "lookup-1", amount: 100.5, type: "PIX", deviceId: expect.any(String), idempotencyKey: expect.any(String),
   } }]);
   expect(await screen.findByText("APROVADA")).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Ver detalhes" })).toHaveAttribute("href", "/extrato/tx");
+  expect(screen.getByRole("link", { name: "Ver detalhes" })).toHaveAttribute("href", "/statement/tx");
 });
 it.each([[404, "Chave PIX não encontrada"], [503, "indisponível"], [400, "Formato de chave PIX inválido"]])("handles lookup HTTP %s", async (status, message) => {
   vi.spyOn(api, "request").mockRejectedValue(new ApiError(Number(status), "Rejected"));

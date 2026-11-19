@@ -250,7 +250,7 @@ export function TransferForm({ accountId }: { accountId: string }) {
           >
             Descartar e fazer nova transferência
           </button>
-          <Link to="/extrato">Consultar extrato</Link>
+          <Link to="/statement">Consultar extrato</Link>
         </div>
       )}
       {transaction && (
@@ -280,7 +280,7 @@ export function TransferForm({ accountId }: { accountId: string }) {
             </p>
           )}
           {pollingMessage && <p role="status">{pollingMessage}</p>}
-          <Link to={`/extrato/${transaction.id}`}>Ver detalhes</Link>
+          <Link to={`/statement/${transaction.id}`}>Ver detalhes</Link>
           {transaction.status !== "CREATED" && (
             <button
               className="secondary"

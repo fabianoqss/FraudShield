@@ -54,11 +54,11 @@ export function App() {
               <NavLink to="/" end>
                 Minha conta
               </NavLink>
-              <NavLink to="/deposito">Depositar</NavLink>
-              <NavLink to="/chaves">Minhas chaves PIX</NavLink>
-              <NavLink to="/transferir">Transferir</NavLink>
-              <NavLink to="/extrato">Extrato</NavLink>
-              <NavLink to="/senha">Trocar senha</NavLink>
+              <NavLink to="/deposit">Depositar</NavLink>
+              <NavLink to="/pix-keys">Minhas chaves PIX</NavLink>
+              <NavLink to="/transfer">Transferir</NavLink>
+              <NavLink to="/statement">Extrato</NavLink>
+              <NavLink to="/password">Trocar senha</NavLink>
               <button
                 className="secondary"
                 disabled={loggingOut}
@@ -74,18 +74,18 @@ export function App() {
       <Routes>
         <Route path="/login" element={<AuthPage key="login" />} />
         <Route
-          path="/cadastro"
+          path="/register"
           element={<AuthPage key="register" register />}
         />
         <Route element={<Protected />}>
-          <Route path="/senha" element={<PasswordPage />} />
-          <Route path="/deposito" element={<DepositPage />} />
+          <Route path="/password" element={<PasswordPage />} />
+          <Route path="/deposit" element={<DepositPage />} />
           <Route element={<AccountRoutes />}>
             <Route path="/" element={<AccountPage />} />
-            <Route path="/chaves" element={<PixKeysPage />} />
-            <Route path="/transferir" element={<TransferPage />} />
-            <Route path="/extrato" element={<StatementPage />} />
-            <Route path="/extrato/:id" element={<TransactionPage />} />
+            <Route path="/pix-keys" element={<PixKeysPage />} />
+            <Route path="/transfer" element={<TransferPage />} />
+            <Route path="/statement" element={<StatementPage />} />
+            <Route path="/statement/:id" element={<TransactionPage />} />
           </Route>
         </Route>
         <Route
