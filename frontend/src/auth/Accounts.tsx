@@ -1,8 +1,9 @@
+import { RefreshCw } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { api } from "../api/client";
 import type { Account } from "../api/types";
-import { ErrorNotice } from "../components/Forms";
+import { Button, Card, ErrorNotice, Notice, fieldControl, fieldLabel } from "../components/Forms";
 
 interface AccountsContext {
   accounts: Account[];
@@ -41,20 +42,22 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
   }, []);
   const account =
     accounts.find((item) => item.id === selected) ?? accounts[0] ?? null;
-  if (loading) return <p role="status">Loading accounts…</p>;
+  if (loading) return <Notice>Loading accounts…</Notice>;
   if (error)
     return (
-      <section>
+      <Card className="space-y-4">
         <ErrorNotice error={error} />
-        <button onClick={() => void reload()}>Try again</button>
-      </section>
+        <Button icon={RefreshCw} onClick={() => void reload()}>Try again</Button>
+      </Card>
     );
   return (
     <Context.Provider value={{ accounts, account, reload }}>
       {accounts.length > 1 && (
-        <label className="account-picker">
-          Selected account
+        <div className="max-w-xl space-y-1.5">
+          <label className={fieldLabel} htmlFor="selected-account">Selected account</label>
           <select
+            className={fieldControl}
+            id="selected-account"
             value={account?.id}
             onChange={(event) => setSelected(event.target.value)}
           >
@@ -64,7 +67,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
               </option>
             ))}
           </select>
-        </label>
+        </div>
       )}
       <div key={account?.id ?? "empty"}>{children}</div>
     </Context.Provider>

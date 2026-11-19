@@ -1,16 +1,27 @@
+import { ArrowRight, ArrowRightLeft, Banknote, KeyRound, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router";
 import { api, ApiError, NetworkError } from "../api/client";
 import { pollTransaction } from "../api/poll";
-import { currency, paymentTypeLabels, statusLabels } from "../api/types";
+import { currency, paymentTypeLabels } from "../api/types";
 import type { PaymentType, PixKeyLookup, Transaction, TransferRequest } from "../api/types";
 import { useAccounts } from "../auth/Accounts";
 import {
+  Button,
+  Card,
   ErrorNotice,
   Field,
+  FieldError,
+  Notice,
+  PageHeading,
+  TransferStatus,
+  fieldControl,
   fieldErrors,
+  fieldLabel,
+  insetSurface,
   parseAmount,
+  textLink,
 } from "../components/Forms";
 
 function deviceId() {
@@ -26,11 +37,10 @@ export function TransferPage() {
   const { account } = useAccounts();
   if (!account)
     return (
-      <section>
-        <h1>Transfer</h1>
-        <p>Create an account before making a transfer.</p>
-        <Link to="/">My account</Link>
-      </section>
+      <Card className="max-w-xl space-y-5">
+        <PageHeading icon={ArrowRightLeft} description="Create an account before making a transfer.">Transfer</PageHeading>
+        <Link className={textLink} to="/">My account</Link>
+      </Card>
     );
   return <TransferForm key={account.id} accountId={account.id} />;
 }
@@ -189,16 +199,17 @@ export function TransferForm({ accountId }: { accountId: string }) {
     });
   }
   return (
-    <section>
-      <h1>Transfer</h1>
+    <Card className="max-w-xl space-y-6">
+      <PageHeading icon={ArrowRightLeft}>Transfer</PageHeading>
       <ErrorNotice error={error} />
       {!transaction && !lookup && (
-        <form onSubmit={submit}>
-          <h2>Recipient</h2>
-          <fieldset disabled={busy || !!retry}>
+        <form onSubmit={submit} className="space-y-4">
+          <h2 className="font-semibold text-slate-200">Recipient</h2>
+          <fieldset disabled={busy || !!retry} className="min-w-0 space-y-4">
             <Field
               name="key"
               label="Pix key"
+              icon={KeyRound}
               value={key}
               onChange={(event) => setKey(event.target.value)}
               required
@@ -209,59 +220,79 @@ export function TransferForm({ accountId }: { accountId: string }) {
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
               label="Amount (R$)"
+              icon={Banknote}
               inputMode="decimal"
               placeholder="100.00"
               required
               error={fields.amount}
             />
-            <label htmlFor="payment-type">Payment type</label>
-            <select id="payment-type" name="type" value={type} onChange={(event) => setType(event.target.value as PaymentType)}>
-              <option value="PIX">{paymentTypeLabels.PIX}</option>
-              <option value="CREDIT">{paymentTypeLabels.CREDIT}</option>
-              <option value="DEBIT">{paymentTypeLabels.DEBIT}</option>
-            </select>
-            {fields.type && <p className="field-error">{fields.type}</p>}
-            <button disabled={waitSeconds > 0}>{busy ? "Looking up key…" : "Look up key"}</button>
+            <div className="space-y-1.5">
+              <label className={fieldLabel} htmlFor="payment-type">Payment type</label>
+              <select
+                className={fieldControl}
+                id="payment-type"
+                name="type"
+                value={type}
+                aria-invalid={!!fields.type}
+                aria-describedby={fields.type ? "payment-type-error" : undefined}
+                onChange={(event) => setType(event.target.value as PaymentType)}
+              >
+                <option value="PIX">{paymentTypeLabels.PIX}</option>
+                <option value="CREDIT">{paymentTypeLabels.CREDIT}</option>
+                <option value="DEBIT">{paymentTypeLabels.DEBIT}</option>
+              </select>
+              {fields.type && <FieldError id="payment-type-error">{fields.type}</FieldError>}
+            </div>
+            <Button type="submit" icon={Search} busy={busy} disabled={waitSeconds > 0}>
+              {busy ? "Looking up key…" : "Look up key"}
+            </Button>
           </fieldset>
         </form>
       )}
       {waitSeconds > 0 && (
-        <p role="status">Too many lookups. Try again in {waitSeconds} {waitSeconds === 1 ? "second" : "seconds"}.</p>
+        <Notice>Too many lookups. Try again in {waitSeconds} {waitSeconds === 1 ? "second" : "seconds"}.</Notice>
       )}
-      {!transaction && lookup && <div>
-        <h2>Confirm transfer</h2>
-        <p>You're sending {currency(parseAmount(amount))} to {lookup.recipientName} (CPF {lookup.maskedCpf})</p>
-        <button disabled={busy || !!retry} onClick={confirm}>{busy ? "Sending…" : "Confirm"}</button>
-        <button className="secondary" disabled={busy || !!retry} onClick={() => { setLookup(undefined); setError(undefined); }}>Back</button>
-      </div>}
+      {!transaction && lookup && (
+        <div className={`${insetSurface} space-y-4 p-4 sm:p-5`}>
+          <h2 className="text-lg font-semibold text-slate-100">Confirm transfer</h2>
+          <p className="text-sm text-slate-300 [overflow-wrap:anywhere]">
+            You're sending {currency(parseAmount(amount))} to {lookup.recipientName} (CPF {lookup.maskedCpf})
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button busy={busy} disabled={!!retry} icon={ArrowRight} onClick={confirm}>{busy ? "Sending…" : "Confirm"}</Button>
+            <Button variant="secondary" disabled={busy || !!retry} onClick={() => { setLookup(undefined); setError(undefined); }}>Back</Button>
+          </div>
+        </div>
+      )}
       {retry && (
-        <div>
-          <p>We saved the transfer details to prevent a duplicate submission.</p>
-          <button disabled={busy} onClick={() => void send(retry)}>
-            Retry same submission
-          </button>
-          <button
-            type="button"
-            className="secondary"
-            disabled={busy}
-            onClick={() => {
-              setRetry(undefined);
-              setLookup(undefined);
-              setError(undefined);
-            }}
-          >
-            Discard and start a new transfer
-          </button>
-          <Link to="/statement">View statement</Link>
+        <div className={`${insetSurface} space-y-4 p-4 sm:p-5`}>
+          <p className="text-sm text-slate-300">We saved the transfer details to prevent a duplicate submission.</p>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button busy={busy} onClick={() => void send(retry)}>
+              Retry same submission
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => {
+                setRetry(undefined);
+                setLookup(undefined);
+                setError(undefined);
+              }}
+            >
+              Discard and start a new transfer
+            </Button>
+            <Link className={textLink} to="/statement">View statement</Link>
+          </div>
         </div>
       )}
       {transaction && (
-        <div>
+        <div className={`${insetSurface} space-y-4 p-4 text-sm text-slate-300 sm:p-5`}>
           <p role="status">
-            <strong>{statusLabels[transaction.status]}</strong>
+            <TransferStatus status={transaction.status} />
           </p>
           <p>
-            Transaction: <code>{transaction.id}</code>
+            Transaction: <code className="text-slate-200 [overflow-wrap:anywhere]">{transaction.id}</code>
           </p>
           {transaction.status === "DENIED" && (
             <p>
@@ -278,22 +309,24 @@ export function TransferForm({ accountId }: { accountId: string }) {
               Transfer approved. Your balance may take a moment to update.
             </p>
           )}
-          {pollingMessage && <p role="status">{pollingMessage}</p>}
-          <Link to={`/statement/${transaction.id}`}>View details</Link>
-          {transaction.status !== "CREATED" && (
-            <button
-              className="secondary"
-              onClick={() => {
-                setTransaction(undefined);
-                setLookup(undefined);
-                setError(undefined);
-              }}
-            >
-              New transfer
-            </button>
-          )}
+          {pollingMessage && <Notice>{pollingMessage}</Notice>}
+          <div className="flex flex-wrap items-center gap-3">
+            <Link className={textLink} to={`/statement/${transaction.id}`}>View details</Link>
+            {transaction.status !== "CREATED" && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setTransaction(undefined);
+                  setLookup(undefined);
+                  setError(undefined);
+                }}
+              >
+                New transfer
+              </Button>
+            )}
+          </div>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
